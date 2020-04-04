@@ -13,7 +13,7 @@ fn main() -> Result<(), String> {
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut game = game::Game::new(&mut world);
-    let mut renderer = renderer::Renderer::new(&mut world, &sdl_context);
+    let mut renderer = renderer::Renderer::new(&sdl_context);
 
     'running: loop {
         for event in event_pump.poll_iter() {

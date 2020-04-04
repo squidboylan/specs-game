@@ -50,7 +50,7 @@ impl<'a> System<'a> for Creator {
     // see the `full` example.
     type SystemData = (Entities<'a>, Read<'a, LazyUpdate>);
 
-    fn run(&mut self, (mut entities, lazy): Self::SystemData) {
+    fn run(&mut self, (entities, lazy): Self::SystemData) {
         let i = entities.create();
         let r = Rect::new(0, self.y, 10, 10);
         lazy.insert(i, r);
@@ -77,7 +77,7 @@ impl<'a, 'b> Game<'a, 'b> {
         world.create_entity().with(Name("B".to_string())).with(Vel(4.0)).with(rect.clone()).build();
         world.create_entity().with(Name("C".to_string())).with(Vel(1.5)).with(rect.clone()).build();
 
-        let mut dispatcher = DispatcherBuilder::new()
+        let dispatcher = DispatcherBuilder::new()
             .with(Physics, "physics", &[])
             .with(Creator::new(20), "creator", &[])
             .build();

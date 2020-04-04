@@ -18,7 +18,7 @@ pub struct Renderer<'a, 'b> {
 }
 
 impl<'a, 'b> Renderer<'a, 'b> {
-    pub fn new(world: &mut World, sdl_context: &sdl2::Sdl) -> Self {
+    pub fn new(sdl_context: &sdl2::Sdl) -> Self {
         let video_subsystem = sdl_context.video().expect("Couldnt get sdl video context");
 
         let window = video_subsystem.window("rust-sdl2 demo: Video", SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -30,7 +30,7 @@ impl<'a, 'b> Renderer<'a, 'b> {
         let mut canvas = window.into_canvas().build().map_err(|e| e.to_string()).expect("Couldnt get an sdl canvas");
         canvas.set_draw_color(Color::RGB(0, 0, 0));
 
-        let mut dispatcher = DispatcherBuilder::new()
+        let dispatcher = DispatcherBuilder::new()
             .with_thread_local(RenderSystem{canvas}).build();
 
         Renderer{ dispatcher }
@@ -52,7 +52,7 @@ impl<'a> System<'a> for RenderSystem {
         self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
         self.canvas.set_draw_color(Color::RGB(255, 0, 0));
-        for (i) in (&rect).join() {
+        for i in (&rect).join() {
             self.canvas.fill_rect(i.0).unwrap();
         }
         self.canvas.present();
