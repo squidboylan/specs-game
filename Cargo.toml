@@ -8,4 +8,8 @@ edition = "2018"
 
 [dependencies]
 specs = '0.16'
-sdl2 = "0.33"
+
+[dependencies.sdl2]
+version = '0.33'
+default-features = false
+features = ["ttf"]

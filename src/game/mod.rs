@@ -28,7 +28,8 @@ impl<'a> System<'a> for Physics {
     // see the `full` example.
     type SystemData = (WriteStorage<'a, Rect>, ReadStorage<'a, Vel>, ReadStorage<'a, Name>);
 
-    fn run(&mut self, (mut rect, vel, _name): Self::SystemData) { for (rect, vel) in (&mut rect, &vel).join() {
+    fn run(&mut self, (mut rect, vel, _name): Self::SystemData) {
+        for (rect, vel) in (&mut rect, &vel).join() {
             rect.0.set_x(rect.0.x() + vel.0 as i32);
         }
     }
