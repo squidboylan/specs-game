@@ -1,5 +1,8 @@
 use specs::prelude::*;
 use std::time;
+use crate::renderer::Rect;
+use crate::renderer::SCREEN_WIDTH;
+use crate::renderer::SCREEN_HEIGHT;
 
 pub struct FPS(pub u32);
 
@@ -36,7 +39,10 @@ impl<'a, 'b> Debug<'a, 'b> {
     pub fn new(world: &mut World) -> Self {
         world.register::<FPS>();
 
-        world.create_entity().with(FPS(0)).build();
+        let width = 100;
+        let height = 100;
+
+        world.create_entity().with(FPS(0)).with(Rect::new(SCREEN_WIDTH as i32 - width, SCREEN_HEIGHT as i32 - height, width as u32, height as u32)).build();
 
         let dispatcher = DispatcherBuilder::new()
             .with(FPSCounter{ last_frame: time::Instant::now() }, "fpscounter", &[])

@@ -1,5 +1,6 @@
 use specs::prelude::*;
 use crate::renderer::Rect;
+use crate::renderer::RectColor;
 
 #[derive(Default)]
 struct Y(i32);
@@ -17,6 +18,10 @@ impl Component for Vel {
 }
 
 impl Component for Rect {
+    type Storage = VecStorage<Self>;
+}
+
+impl Component for RectColor {
     type Storage = VecStorage<Self>;
 }
 
@@ -54,7 +59,9 @@ impl<'a> System<'a> for Creator {
     fn run(&mut self, (entities, lazy): Self::SystemData) {
         let i = entities.create();
         let r = Rect::new(0, self.y, 10, 10);
+        let c = RectColor::new(0, self.y as u8, 0, 255);
         lazy.insert(i, r);
+        lazy.insert(i, c);
         lazy.insert(i, Vel(2.0));
         self.y+=1;
     }
@@ -68,15 +75,32 @@ pub struct Game<'a, 'b> {
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new(world: &mut World) -> Self {
         world.register::<Rect>();
+        world.register::<RectColor>();
         world.register::<Vel>();
         world.register::<Name>();
 
         // An entity may or may not contain some component.
         let rect = Rect::new(0, 1, 5, 5);
+        let color = RectColor::new(255, 0, 0, 255);
 
-        world.create_entity().with(Name("A".to_string())).with(Vel(2.0)).with(rect.clone()).build();
-        world.create_entity().with(Name("B".to_string())).with(Vel(4.0)).with(rect.clone()).build();
-        world.create_entity().with(Name("C".to_string())).with(Vel(1.5)).with(rect.clone()).build();
+        world.create_entity()
+            .with(Name("A".to_string()))
+            .with(Vel(2.0))
+            .with(rect.clone())
+            .with(color.clone())
+            .build();
+        world.create_entity()
+            .with(Name("B".to_string()))
+            .with(Vel(4.0))
+            .with(rect.clone())
+            .with(color.clone())
+            .build();
+        world.create_entity()
+            .with(Name("C".to_string()))
+            .with(Vel(1.5))
+            .with(rect.clone())
+            .with(color.clone())
+            .build();
 
         let dispatcher = DispatcherBuilder::new()
             .with(Physics, "physics", &[])

@@ -33,7 +33,7 @@ fn main() -> Result<(), String> {
         debug.run(&mut world);
         renderer.run(&mut world);
         world.maintain();
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 144));
     }
     Ok(())
 }
