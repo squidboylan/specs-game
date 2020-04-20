@@ -2,43 +2,11 @@ use specs::prelude::*;
 use crate::renderer::Rect;
 use crate::renderer::RectColor;
 
-#[derive(Default)]
-struct Y(i32);
+mod physics;
+mod input;
 
-struct Name(String);
-
-impl Component for Name {
-    type Storage = VecStorage<Self>;
-}
-
-struct Vel(f32);
-
-impl Component for Vel {
-    type Storage = VecStorage<Self>;
-}
-
-impl Component for Rect {
-    type Storage = VecStorage<Self>;
-}
-
-impl Component for RectColor {
-    type Storage = VecStorage<Self>;
-}
-
-struct Physics;
-
-impl<'a> System<'a> for Physics {
-    // These are the resources required for execution.
-    // You can also define a struct and `#[derive(SystemData)]`,
-    // see the `full` example.
-    type SystemData = (WriteStorage<'a, Rect>, ReadStorage<'a, Vel>, ReadStorage<'a, Name>);
-
-    fn run(&mut self, (mut rect, vel, _name): Self::SystemData) {
-        for (rect, vel) in (&mut rect, &vel).join() {
-            rect.0.set_x(rect.0.x() + vel.0 as i32);
-        }
-    }
-}
+pub use input::*;
+pub use physics::*;
 
 struct Creator {
     y: i32,
@@ -51,9 +19,6 @@ impl Creator {
 }
 
 impl<'a> System<'a> for Creator {
-    // These are the resources required for execution.
-    // You can also define a struct and `#[derive(SystemData)]`,
-    // see the `full` example.
     type SystemData = (Entities<'a>, Read<'a, LazyUpdate>);
 
     fn run(&mut self, (entities, lazy): Self::SystemData) {
@@ -62,7 +27,7 @@ impl<'a> System<'a> for Creator {
         let c = RectColor::new(0, self.y as u8, 0, 255);
         lazy.insert(i, r);
         lazy.insert(i, c);
-        lazy.insert(i, Vel(2.0));
+        lazy.insert(i, Vel{x: 2.0, y: 0.0});
         self.y+=1;
     }
 }
@@ -77,33 +42,31 @@ impl<'a, 'b> Game<'a, 'b> {
         world.register::<Rect>();
         world.register::<RectColor>();
         world.register::<Vel>();
-        world.register::<Name>();
+        world.register::<Player>();
 
-        // An entity may or may not contain some component.
         let rect = Rect::new(0, 1, 5, 5);
         let color = RectColor::new(255, 0, 0, 255);
 
         world.create_entity()
-            .with(Name("A".to_string()))
-            .with(Vel(2.0))
+            .with(Player)
+            .with(Vel{x: 0.0, y: 0.0})
             .with(rect.clone())
             .with(color.clone())
             .build();
         world.create_entity()
-            .with(Name("B".to_string()))
-            .with(Vel(4.0))
+            .with(Vel{x: 1.0, y: 0.0})
             .with(rect.clone())
             .with(color.clone())
             .build();
         world.create_entity()
-            .with(Name("C".to_string()))
-            .with(Vel(1.5))
+            .with(Vel{x: 0.0, y: 2.0})
             .with(rect.clone())
             .with(color.clone())
             .build();
 
         let dispatcher = DispatcherBuilder::new()
-            .with(Physics, "physics", &[])
+            .with(InputHandler, "input_handler", &[])
+            .with(Physics, "physics", &["input_handler"])
             .with(Creator::new(20), "creator", &[])
             .build();
 

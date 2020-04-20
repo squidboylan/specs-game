@@ -24,12 +24,21 @@ impl RectColor {
     }
 }
 
+impl Component for Rect {
+    type Storage = VecStorage<Self>;
+}
+
+impl Component for RectColor {
+    type Storage = VecStorage<Self>;
+}
+
 pub struct Renderer<'a, 'b> {
     dispatcher: Dispatcher<'a, 'b>,
 }
 
 impl<'a, 'b> Renderer<'a, 'b> {
     pub fn new(sdl_context: &sdl2::Sdl, ttf_context: &'b sdl2::ttf::Sdl2TtfContext) -> Self {
+        sdl_context.mouse().show_cursor(false);
         let video_subsystem = sdl_context.video().expect("Couldnt get sdl video context");
 
         let window = video_subsystem.window("rust-sdl2 demo: Video", SCREEN_WIDTH, SCREEN_HEIGHT)

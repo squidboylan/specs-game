@@ -17,6 +17,8 @@ fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
 
+    world.insert(game::Input::new());
+
     let mut game = game::Game::new(&mut world);
     let mut debug = debug::Debug::new(&mut world);
     let mut renderer = renderer::Renderer::new(&sdl_context, &ttf_context);
@@ -28,7 +30,7 @@ fn main() -> Result<(), String> {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
-                _ => {}
+                _ => game::update_input(&mut world, event),
             }
         }
 
