@@ -1,5 +1,5 @@
 [package]
-name = "ecs-hacking"
+name = "specs-game"
 version = "0.1.0"
 authors = ["Caleb Boylan <calebboylan@gmail.com>"]
 edition = "2018"
@@ -13,3 +13,6 @@ specs = '0.16'
 version = '0.33'
 default-features = false
 features = ["ttf"]
+
+[profile.release]
+debug = true
