@@ -43,15 +43,23 @@ impl<'a, 'b> Game<'a, 'b> {
         world.register::<RectColor>();
         world.register::<Vel>();
         world.register::<Player>();
+        world.register::<Cursor>();
 
         let rect = Rect::new(0, 1, 5, 5);
         let color = RectColor::new(255, 0, 0, 255);
+        let cursor_color = RectColor::new(255, 255, 255, 255);
 
         world.create_entity()
             .with(Player)
             .with(Vel{x: 0.0, y: 0.0})
             .with(rect.clone())
             .with(color.clone())
+            .build();
+        world.create_entity()
+            .with(Cursor)
+            .with(Vel{x: 0.0, y: 0.0})
+            .with(rect.clone())
+            .with(cursor_color.clone())
             .build();
         world.create_entity()
             .with(Vel{x: 1.0, y: 0.0})

@@ -38,22 +38,24 @@ pub struct Renderer<'a, 'b> {
 
 impl<'a, 'b> Renderer<'a, 'b> {
     pub fn new(sdl_context: &sdl2::Sdl, ttf_context: &'b sdl2::ttf::Sdl2TtfContext) -> Self {
-        sdl_context.mouse().show_cursor(false);
         let video_subsystem = sdl_context.video().expect("Couldnt get sdl video context");
 
         let window = video_subsystem.window("rust-sdl2 demo: Video", SCREEN_WIDTH, SCREEN_HEIGHT)
             .position_centered()
+            .fullscreen()
             .opengl()
             .build()
             .map_err(|e| e.to_string()).expect("Couldnt initialize an sdl opengl window");
 
-        let mut canvas = window.into_canvas().build().map_err(|e| e.to_string()).expect("Couldnt get an sdl canvas");
+        let mut canvas = window.into_canvas().present_vsync().build().map_err(|e| e.to_string()).expect("Couldnt get an sdl canvas");
         canvas.set_draw_color(Color::RGB(0, 0, 0));
 
         let font = ttf_context.load_font("fonts/OpenSans-Regular.ttf", 128).unwrap();
 
         let dispatcher = DispatcherBuilder::new()
             .with_thread_local(RenderSystem{canvas, font}).build();
+
+        sdl_context.mouse().set_relative_mouse_mode(true);
 
         Renderer{ dispatcher }
     }
