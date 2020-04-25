@@ -20,22 +20,22 @@ impl Component for Cursor {
 
 #[derive(Default)]
 pub struct Keyboard {
-    W: bool,
-    A: bool,
-    S: bool,
-    D: bool,
+    pub W: bool,
+    pub A: bool,
+    pub S: bool,
+    pub D: bool,
 }
 
 #[derive(Default)]
 pub struct Mouse {
-    x: i32,
-    y: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Default)]
 pub struct Input {
-    keyboard: Keyboard,
-    mouse: Mouse,
+    pub keyboard: Keyboard,
+    pub mouse: Mouse,
 }
 
 impl Input {
@@ -54,25 +54,6 @@ impl Input {
         }
     }
 
-}
-
-// MouseMotion { timestamp: 29647, window_id: 2, which: 0, mousestate: MouseState { mouse_state: 0, x: 0, y: 0 }, x: 687, y: 212, xrel: 1, yrel: 0 }
-//
-
-pub fn update_input(world: &mut World, event: Event) {
-    let mut input = world.fetch_mut::<Input>();
-    match event {
-        Event::KeyUp { keycode: Some(Keycode::W), ..} => input.keyboard.W = false,
-        Event::KeyUp { keycode: Some(Keycode::A), ..} => input.keyboard.A = false,
-        Event::KeyUp { keycode: Some(Keycode::S), ..} => input.keyboard.S = false,
-        Event::KeyUp { keycode: Some(Keycode::D), ..} => input.keyboard.D = false,
-        Event::KeyDown { keycode: Some(Keycode::W), ..} => input.keyboard.W = true,
-        Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
-        Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
-        Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
-        Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
-        _ => println!("{:?}", event),
-    }
 }
 
 pub struct InputHandler;

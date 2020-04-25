@@ -4,23 +4,20 @@ use sdl2::keyboard::Keycode;
 use std::time;
 
 mod game;
+use game::GameState;
 mod renderer;
 mod debug;
 
 const FRAMERATE: u32 = 60;
 
 fn main() -> Result<(), String> {
-    let mut world = World::new();
-
     let sdl_context = sdl2::init().expect("sdl2 init failed");
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string()).unwrap();
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    world.insert(game::Input::new());
-
-    let mut game = game::Game::new(&mut world);
-    let mut debug = debug::Debug::new(&mut world);
+    let mut level = game::level::Level::new();
+    let mut debug = debug::Debug::new(&mut level.world);
     let mut renderer = renderer::Renderer::new(&sdl_context, &ttf_context);
 
     'running: loop {
@@ -30,14 +27,14 @@ fn main() -> Result<(), String> {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
-                _ => game::update_input(&mut world, event),
+                _ => level.input_handler(event),
             }
         }
 
-        game.run(&mut world);
-        debug.run(&mut world);
-        renderer.run(&mut world);
-        world.maintain();
+        level.run();
+        debug.run(&mut level.world);
+        renderer.run(&mut level.world);
+        level.world.maintain();
         let mut curr_time = time::Instant::now();
         if time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) > curr_time.duration_since(prev_time) {
             ::std::thread::sleep(time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) - curr_time.duration_since(prev_time));
