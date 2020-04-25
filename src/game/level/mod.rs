@@ -42,7 +42,33 @@ pub struct Level<'a, 'b> {
 }
 
 impl<'a, 'b> GameState for Level<'a, 'b> {
-    fn new() -> Self {
+    fn input_handler(&mut self, event: Event) {
+        let mut input = self.world.fetch_mut::<Input>();
+        match event {
+            Event::KeyUp { keycode: Some(Keycode::W), ..} => input.keyboard.W = false,
+            Event::KeyUp { keycode: Some(Keycode::A), ..} => input.keyboard.A = false,
+            Event::KeyUp { keycode: Some(Keycode::S), ..} => input.keyboard.S = false,
+            Event::KeyUp { keycode: Some(Keycode::D), ..} => input.keyboard.D = false,
+            Event::KeyDown { keycode: Some(Keycode::W), ..} => input.keyboard.W = true,
+            Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
+            Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
+            Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
+            Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
+            _ => println!("{:?}", event),
+        }
+    }
+
+    fn get_mut_world(&mut self) -> &mut World {
+        &mut self.world
+    }
+
+    fn run(&mut self) {
+        self.dispatcher.dispatch(&self.world);
+    }
+}
+
+impl<'a, 'b> Level<'a, 'b> {
+    pub fn new() -> Self {
         let mut world = World::new();
 
         world.insert(Input::new());
@@ -87,27 +113,5 @@ impl<'a, 'b> GameState for Level<'a, 'b> {
             .build();
 
         Level{ dispatcher, world }
-    }
-
-    fn input_handler(&mut self, event: Event) {
-        let mut input = self.world.fetch_mut::<Input>();
-        match event {
-            Event::KeyUp { keycode: Some(Keycode::W), ..} => input.keyboard.W = false,
-            Event::KeyUp { keycode: Some(Keycode::A), ..} => input.keyboard.A = false,
-            Event::KeyUp { keycode: Some(Keycode::S), ..} => input.keyboard.S = false,
-            Event::KeyUp { keycode: Some(Keycode::D), ..} => input.keyboard.D = false,
-            Event::KeyDown { keycode: Some(Keycode::W), ..} => input.keyboard.W = true,
-            Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
-            Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
-            Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
-            Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
-            _ => println!("{:?}", event),
-        }
-    }
-}
-
-impl<'a, 'b> Level<'a, 'b> {
-    pub fn run(&mut self) {
-        self.dispatcher.dispatch(&self.world);
     }
 }
