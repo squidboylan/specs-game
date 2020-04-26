@@ -25,6 +25,7 @@ impl<'a, 'b> GameState for Menu<'a, 'b> {
             Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
             Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
             Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
+            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => *self.world.fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
             Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
             _ => println!("{:?}", event),
         }

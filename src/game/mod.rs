@@ -60,6 +60,7 @@ impl<'a, 'b> Game<'a, 'b> {
                 let mut world = World::new();
 
                 world.insert(Input::new());
+                world.insert::<Option<StateTransition>>(None);
 
                 world.register::<Rect>();
                 world.register::<RectColor>();
@@ -111,7 +112,7 @@ impl<'a, 'b> Game<'a, 'b> {
                 let curr_state = self.state_stack.last_mut().unwrap();
                 for event in event_pump.poll_iter() {
                     match event {
-                        Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        Event::Quit {..} => {
                             break 'running
                         },
                         _ => curr_state.input_handler(event),

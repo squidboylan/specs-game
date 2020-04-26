@@ -5,6 +5,7 @@ use crate::game::input::Input;
 use crate::game::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
+use std::mem;
 
 pub mod input_handler;
 pub mod physics;
@@ -54,6 +55,7 @@ impl<'a, 'b> GameState for Level<'a, 'b> {
             Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
             Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
             Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
+            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => *self.world.fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
             Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
             _ => println!("{:?}", event),
         }
@@ -65,7 +67,7 @@ impl<'a, 'b> GameState for Level<'a, 'b> {
 
     fn run(&mut self) -> Option<StateTransition> {
         self.dispatcher.dispatch(&self.world);
-        None
+        mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
     }
 }
 
@@ -74,6 +76,7 @@ impl<'a, 'b> Level<'a, 'b> {
         let mut world = World::new();
 
         world.insert(Input::new());
+        world.insert::<Option<StateTransition>>(None);
 
         world.register::<Rect>();
         world.register::<RectColor>();
