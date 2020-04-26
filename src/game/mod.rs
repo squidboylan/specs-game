@@ -5,7 +5,9 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time;
 
-pub mod level;
+mod level;
+mod menu;
+mod input;
 
 const FRAMERATE: u32 = 60;
 
@@ -25,11 +27,12 @@ pub struct Game<'a, 'b> {
 
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new(sdl_context: &sdl2::Sdl, ttf_context: &'b sdl2::ttf::Sdl2TtfContext) -> Self {
-        let mut level = level::Level::new();
-        let mut debug = debug::Debug::new(&mut level.world);
+        //let mut level = level::Level::new();
+        let mut menu = menu::Menu::new();
+        let mut debug = debug::Debug::new(&mut menu.world);
         let mut renderer = renderer::Renderer::new(sdl_context, ttf_context);
         let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
-        state_stack.push(Box::new(level));
+        state_stack.push(Box::new(menu));
 
         Game {debug, renderer, state_stack}
     }
@@ -57,4 +60,18 @@ impl<'a, 'b> Game<'a, 'b> {
             }
         }
     }
+}
+
+#[derive(Default)]
+pub struct Player;
+
+impl Component for Player {
+    type Storage = NullStorage<Self>;
+}
+
+#[derive(Default)]
+pub struct Cursor;
+
+impl Component for Cursor {
+    type Storage = NullStorage<Self>;
 }

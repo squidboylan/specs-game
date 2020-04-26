@@ -16,7 +16,7 @@ impl Rect {
 }
 
 #[derive(Clone)]
-pub struct RectColor(Color);
+pub struct RectColor(pub Color);
 
 impl RectColor {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
