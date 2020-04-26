@@ -60,6 +60,7 @@ impl<'a> Renderer {
         window.set_vertical_sync_enabled(true);
         window.set_mouse_cursor_visible(false);
         window.set_mouse_cursor_grabbed(true);
+        window.set_framerate_limit(60);
 
         let font = Font::from_file("fonts/OpenSans-Regular.ttf").unwrap();
 

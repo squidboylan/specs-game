@@ -129,8 +129,10 @@ impl<'a, 'b> Game<'a, 'b> {
 
     pub fn run(&mut self) {
         'running: loop {
-            let mut prev_time = time::Instant::now();
             let mut transition = {
+                if self.state_stack.len() == 0 {
+                    return;
+                }
                 let curr_state = self.state_stack.last_mut().unwrap();
                 while let Some(event) = self.renderer.window.poll_event() {
                     match event {
@@ -160,10 +162,6 @@ impl<'a, 'b> Game<'a, 'b> {
                 Some(StateTransition::Pop) => { self.state_stack.pop(); },
                 None => (),
             };
-            let mut curr_time = time::Instant::now();
-            if time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) > curr_time.duration_since(prev_time) {
-                ::std::thread::sleep(time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) - curr_time.duration_since(prev_time));
-            }
         }
     }
 }
