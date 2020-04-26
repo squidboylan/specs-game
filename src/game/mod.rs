@@ -1,8 +1,9 @@
 use specs::prelude::*;
 use crate::renderer;
 use crate::debug;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+use sfml::window::Event;
+use sfml::window::Key;
+use sfml::window::mouse::Button;
 use std::time;
 
 mod level;
@@ -12,7 +13,22 @@ mod input;
 const FRAMERATE: u32 = 60;
 
 pub trait GameState {
-    fn input_handler(&mut self, event: Event);
+    fn input_handler(&mut self, event: Event) {
+        match event {
+            Event::KeyReleased { code: Key::W, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.W = false,
+            Event::KeyReleased { code: Key::A, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.A = false,
+            Event::KeyReleased { code: Key::S, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.S = false,
+            Event::KeyReleased { code: Key::D, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.D = false,
+            Event::KeyPressed { code: Key::W, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.W = true,
+            Event::KeyPressed { code: Key::A, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.A = true,
+            Event::KeyPressed { code: Key::S, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.S = true,
+            Event::KeyPressed { code: Key::D, ..} => self.get_mut_world().fetch_mut::<input::Input>().keyboard.D = true,
+            Event::KeyPressed { code: Key::Escape, .. } => *self.get_mut_world().fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
+            Event::MouseMoved { x, y, ..} => { let mut input = self.get_mut_world().fetch_mut::<input::Input>(); input.mouse.x = x; input.mouse.y = y },
+            Event::MouseButtonPressed { button: Button::Left, ..} => self.get_mut_world().fetch_mut::<input::Input>().mouse.left_tap = true,
+            _ => println!("{:?}", event),
+        };
+    }
 
     fn get_mut_world(&mut self) -> &mut World;
 
@@ -31,12 +47,12 @@ pub enum State {
 
 pub struct Game<'a, 'b> {
     debug: debug::Debug<'a, 'b>,
-    renderer: renderer::Renderer<'a, 'b>,
+    renderer: renderer::Renderer,
     state_stack: Vec<Box<dyn GameState>>,
 }
 
 impl<'a, 'b> Game<'a, 'b> {
-    pub fn new(sdl_context: &sdl2::Sdl, ttf_context: &'b sdl2::ttf::Sdl2TtfContext) -> Self {
+    pub fn new() -> Self {
         let mut menu = menu::Menu::new();
         let cursor_rect = renderer::Rect::new(0, 0, 5, 5);
         let rect = renderer::Rect::new(25, 25, 25, 25);
@@ -104,21 +120,21 @@ impl<'a, 'b> Game<'a, 'b> {
             })})
             .build();
         let mut debug = debug::Debug::new(&mut menu.world);
-        let mut renderer = renderer::Renderer::new(sdl_context, ttf_context);
+        let mut renderer = renderer::Renderer::new();
         let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
 
         Game {debug, renderer, state_stack}
     }
 
-    pub fn run(&mut self, mut event_pump: sdl2::EventPump) {
+    pub fn run(&mut self) {
         'running: loop {
             let mut prev_time = time::Instant::now();
             let mut transition = {
                 let curr_state = self.state_stack.last_mut().unwrap();
-                for event in event_pump.poll_iter() {
+                while let Some(event) = self.renderer.window.poll_event() {
                     match event {
-                        Event::Quit {..} => {
+                        Event::Closed {..} => {
                             break 'running
                         },
                         _ => curr_state.input_handler(event),

@@ -42,7 +42,7 @@ impl<'a, 'b> Debug<'a, 'b> {
         let width = 100;
         let height = 100;
 
-        world.create_entity().with(FPS(0)).with(Rect::new(SCREEN_WIDTH as i32 - width, SCREEN_HEIGHT as i32 - height, width as u32, height as u32)).build();
+        world.create_entity().with(FPS(0)).with(Rect::new(SCREEN_WIDTH as i32 - width, SCREEN_HEIGHT as i32 - height, width as i32, height as i32)).build();
 
         let dispatcher = DispatcherBuilder::new()
             .with(FPSCounter{ last_frame: time::Instant::now() }, "fpscounter", &[])

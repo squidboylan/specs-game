@@ -1,8 +1,6 @@
 use specs::prelude::*;
 use crate::renderer::Rect;
 use crate::renderer::RectColor;
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
 use crate::game::input::*;
 use crate::game::*;
 use crate::game::level;
@@ -14,25 +12,6 @@ pub struct Menu<'a, 'b> {
 }
 
 impl<'a, 'b> GameState for Menu<'a, 'b> {
-    fn input_handler(&mut self, event: Event) {
-        let mut input = self.world.fetch_mut::<Input>();
-        match event {
-            Event::KeyUp { keycode: Some(Keycode::W), ..} => input.keyboard.W = false,
-            Event::KeyUp { keycode: Some(Keycode::A), ..} => input.keyboard.A = false,
-            Event::KeyUp { keycode: Some(Keycode::S), ..} => input.keyboard.S = false,
-            Event::KeyUp { keycode: Some(Keycode::D), ..} => input.keyboard.D = false,
-            Event::KeyDown { keycode: Some(Keycode::W), ..} => input.keyboard.W = true,
-            Event::KeyDown { keycode: Some(Keycode::A), ..} => input.keyboard.A = true,
-            Event::KeyDown { keycode: Some(Keycode::S), ..} => input.keyboard.S = true,
-            Event::KeyDown { keycode: Some(Keycode::D), ..} => input.keyboard.D = true,
-            Event::KeyDown { keycode: Some(Keycode::Escape), .. } => *self.world.fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
-            Event::MouseButtonDown { mouse_btn: sdl2::mouse::MouseButton::Left, .. } => input.mouse.left_tap = true,
-
-            Event::MouseMotion { x: x, y: y, ..} => { input.mouse.x = x; input.mouse.y = y },
-            _ => println!("{:?}", event),
-        }
-    }
-
     fn get_mut_world(&mut self) -> &mut World {
         &mut self.world
     }
@@ -79,8 +58,8 @@ impl<'a> System<'a> for InputHandler {
 
     fn run(&mut self, (mut rect, mut color, mut hover, mut click, cursor, mut input, mut trans): Self::SystemData) {
         for (r, c, on_hover) in (&rect, &mut color, &mut hover).join() {
-            if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
-                input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
+            if input.mouse.x >= r.0.left && input.mouse.x <= r.0.left + r.0.width &&
+                input.mouse.y >= r.0.top && input.mouse.y <= r.0.top + r.0.height {
                 *trans = (on_hover.f)(c);
                 match &*trans {
                     Some(x) => return,
@@ -91,8 +70,8 @@ impl<'a> System<'a> for InputHandler {
         if input.mouse.left_tap {
             input.mouse.left_tap = false;
             for (r, c, on_click) in (&rect, &mut color, &mut click).join() {
-                if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
-                    input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
+                if input.mouse.x >= r.0.left && input.mouse.x <= r.0.left + r.0.width &&
+                    input.mouse.y >= r.0.top && input.mouse.y <= r.0.top + r.0.height {
                     *trans = (on_click.f)();
                     match &*trans {
                         Some(x) => return,
@@ -102,8 +81,8 @@ impl<'a> System<'a> for InputHandler {
             }
         }
         for (r, _) in (&mut rect, &cursor).join() {
-            r.0.x = input.mouse.x - r.0.w/2;
-            r.0.y = input.mouse.y - r.0.h/2;
+            r.0.left = input.mouse.x - r.0.width/2;
+            r.0.top = input.mouse.y - r.0.height/2;
         }
     }
 }

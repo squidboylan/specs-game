@@ -9,10 +9,9 @@ edition = "2018"
 [dependencies]
 specs = '0.16'
 
-[dependencies.sdl2]
-version = '0.33'
-default-features = false
-features = ["ttf"]
+[dependencies.sfml]
+version = '0.15'
+default-features = true
 
 [profile.release]
 debug = true
