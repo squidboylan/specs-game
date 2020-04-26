@@ -15,6 +15,7 @@ pub struct Keyboard {
 pub struct Mouse {
     pub x: i32,
     pub y: i32,
+    pub left_tap: bool,
 }
 
 #[derive(Default)]
@@ -35,6 +36,7 @@ impl Input {
             mouse: Mouse {
                 x: 0,
                 y: 0,
+                left_tap: false,
             }
         }
     }

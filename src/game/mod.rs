@@ -51,7 +51,7 @@ impl<'a, 'b> Game<'a, 'b> {
         menu.world.create_entity()
             .with(rect.clone())
             .with(color.clone())
-            .with(menu::OnHover{f: Box::new(|c| {
+            .with(menu::OnClick{f: Box::new(|| {
                 use crate::renderer::Rect;
                 use crate::renderer::RectColor;
                 use level::physics::*;
@@ -95,6 +95,12 @@ impl<'a, 'b> Game<'a, 'b> {
                     .with(color.clone())
                     .build();
                 Some(StateTransition::Push(State::Level, world))
+            })})
+            .with(menu::OnHover{f: Box::new(|c| {
+                c.0.r = 255;
+                c.0.g = 255;
+                c.0.b = 255;
+                None
             })})
             .build();
         let mut debug = debug::Debug::new(&mut menu.world);
