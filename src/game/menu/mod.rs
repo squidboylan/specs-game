@@ -11,7 +11,6 @@ use std::mem;
 pub struct Menu<'a, 'b> {
     dispatcher: Dispatcher<'a, 'b>,
     pub world: World,
-    transition: Option<StateTransition>,
 }
 
 impl<'a, 'b> GameState for Menu<'a, 'b> {
@@ -37,11 +36,7 @@ impl<'a, 'b> GameState for Menu<'a, 'b> {
 
     fn run(&mut self) -> Option<StateTransition> {
         self.dispatcher.dispatch(&self.world);
-        if self.world.fetch::<TransitionToLevel>().0 == true {
-            Some(StateTransition::Push(Box::new(level::Level::new())))
-        } else {
-            None
-        }
+        mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
     }
 }
 
@@ -50,7 +45,7 @@ impl<'a, 'b> Menu<'a, 'b> {
         let mut world = World::new();
 
         world.insert(Input::new());
-        world.insert(TransitionToLevel(false));
+        world.insert::<Option<StateTransition>>(None);
 
         world.register::<Rect>();
         world.register::<RectColor>();
@@ -61,22 +56,31 @@ impl<'a, 'b> Menu<'a, 'b> {
             .with(InputHandler, "input_handler", &[])
             .build();
 
-        Menu { dispatcher, world, transition: None }
+        Menu { dispatcher, world}
+    }
+
+    pub fn from_world(world: World) -> Self {
+        let dispatcher = DispatcherBuilder::new()
+            .with(InputHandler, "input_handler", &[])
+            .build();
+
+        Menu { dispatcher, world}
     }
 }
 
 pub struct InputHandler;
 
 impl<'a> System<'a> for InputHandler {
-    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, OnHover>, ReadStorage<'a, Cursor>, Read<'a, Input>, Write<'a, TransitionToLevel>);
+    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, OnHover>, ReadStorage<'a, Cursor>, Read<'a, Input>, Write<'a, Option<StateTransition>>);
 
     fn run(&mut self, (mut rect, mut color, mut hover, cursor, input, mut trans): Self::SystemData) {
         for (r, c, on_hover) in (&rect, &mut color, &mut hover).join() {
             if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
                 input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
-                trans.0 = (on_hover.f)(c);
-                if trans.0 == true {
-                    break;
+                *trans = (on_hover.f)(c);
+                match &*trans {
+                    Some(x) => break,
+                    None => (),
                 }
             }
         }
@@ -88,7 +92,7 @@ impl<'a> System<'a> for InputHandler {
 }
 
 pub struct OnHover{
-    pub f: Box<dyn FnMut(&mut RectColor) -> bool + Send + Sync>,
+    pub f: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
 }
 
 impl Component for OnHover {

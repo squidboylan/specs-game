@@ -19,9 +19,14 @@ pub trait GameState {
     fn run(&mut self) -> Option<StateTransition> ;
 }
 
-enum StateTransition {
-    Push(Box<dyn GameState>),
+pub enum StateTransition {
+    Push(State, World),
     Pop,
+}
+
+pub enum State {
+    Level,
+    Menu
 }
 
 pub struct Game<'a, 'b> {
@@ -47,7 +52,48 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(rect.clone())
             .with(color.clone())
             .with(menu::OnHover{f: Box::new(|c| {
-                true
+                use crate::renderer::Rect;
+                use crate::renderer::RectColor;
+                use level::physics::*;
+                use input::Input;
+
+                let mut world = World::new();
+
+                world.insert(Input::new());
+
+                world.register::<Rect>();
+                world.register::<RectColor>();
+                world.register::<Vel>();
+                world.register::<Player>();
+                world.register::<Cursor>();
+
+                let rect = Rect::new(0, 1, 5, 5);
+                let color = RectColor::new(255, 0, 0, 255);
+                let cursor_color = RectColor::new(255, 255, 255, 255);
+
+                world.create_entity()
+                    .with(Player)
+                    .with(Vel{x: 0.0, y: 0.0})
+                    .with(rect.clone())
+                    .with(color.clone())
+                    .build();
+                world.create_entity()
+                    .with(Cursor)
+                    .with(Vel{x: 0.0, y: 0.0})
+                    .with(rect.clone())
+                    .with(cursor_color.clone())
+                    .build();
+                world.create_entity()
+                    .with(Vel{x: 1.0, y: 0.0})
+                    .with(rect.clone())
+                    .with(color.clone())
+                    .build();
+                world.create_entity()
+                    .with(Vel{x: 0.0, y: 2.0})
+                    .with(rect.clone())
+                    .with(color.clone())
+                    .build();
+                Some(StateTransition::Push(State::Level, world))
             })})
             .build();
         let mut debug = debug::Debug::new(&mut menu.world);
@@ -80,9 +126,13 @@ impl<'a, 'b> Game<'a, 'b> {
             };
 
             match transition {
-                Some(StateTransition::Push(mut x)) => {
-                    self.debug = debug::Debug::new(x.get_mut_world());
-                    self.state_stack.push(x)
+                Some(StateTransition::Push(State::Level, mut world)) => {
+                    self.debug = debug::Debug::new(&mut world);
+                    self.state_stack.push(Box::new(level::Level::from_world(world)));
+                },
+                Some(StateTransition::Push(State::Menu, mut world)) => {
+                    self.debug = debug::Debug::new(&mut world);
+                    self.state_stack.push(Box::new(menu::Menu::from_world(world)));
                 },
                 Some(StateTransition::Pop) => { self.state_stack.pop(); },
                 None => (),

@@ -6,8 +6,8 @@ use crate::game::*;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
-mod input_handler;
-mod physics;
+pub mod input_handler;
+pub mod physics;
 
 pub use input_handler::*;
 pub use physics::*;
@@ -108,6 +108,16 @@ impl<'a, 'b> Level<'a, 'b> {
             .with(color.clone())
             .build();
 
+        let dispatcher = DispatcherBuilder::new()
+            .with(InputHandler, "input_handler", &[])
+            .with(Physics, "physics", &["input_handler"])
+            .with(Creator::new(20), "creator", &[])
+            .build();
+
+        Level{ dispatcher, world }
+    }
+
+    pub fn from_world(world: World) -> Self {
         let dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input_handler", &[])
             .with(Physics, "physics", &["input_handler"])
