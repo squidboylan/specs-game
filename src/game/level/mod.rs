@@ -63,8 +63,9 @@ impl<'a, 'b> GameState for Level<'a, 'b> {
         &mut self.world
     }
 
-    fn run(&mut self) {
+    fn run(&mut self) -> Option<StateTransition> {
         self.dispatcher.dispatch(&self.world);
+        None
     }
 }
 

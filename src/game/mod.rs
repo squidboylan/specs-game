@@ -16,7 +16,12 @@ pub trait GameState {
 
     fn get_mut_world(&mut self) -> &mut World;
 
-    fn run(&mut self);
+    fn run(&mut self) -> Option<StateTransition> ;
+}
+
+enum StateTransition {
+    Push(Box<dyn GameState>),
+    Pop,
 }
 
 pub struct Game<'a, 'b> {
@@ -27,8 +32,24 @@ pub struct Game<'a, 'b> {
 
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new(sdl_context: &sdl2::Sdl, ttf_context: &'b sdl2::ttf::Sdl2TtfContext) -> Self {
-        //let mut level = level::Level::new();
         let mut menu = menu::Menu::new();
+        let cursor_rect = renderer::Rect::new(0, 0, 5, 5);
+        let rect = renderer::Rect::new(25, 25, 25, 25);
+        let color = renderer::RectColor::new(255, 0, 0, 255);
+        let cursor_color = renderer::RectColor::new(255, 255, 255, 255);
+
+        menu.world.create_entity()
+            .with(Cursor)
+            .with(cursor_rect.clone())
+            .with(cursor_color.clone())
+            .build();
+        menu.world.create_entity()
+            .with(rect.clone())
+            .with(color.clone())
+            .with(menu::OnHover{f: Box::new(|c| {
+                true
+            })})
+            .build();
         let mut debug = debug::Debug::new(&mut menu.world);
         let mut renderer = renderer::Renderer::new(sdl_context, ttf_context);
         let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
@@ -39,21 +60,33 @@ impl<'a, 'b> Game<'a, 'b> {
 
     pub fn run(&mut self, mut event_pump: sdl2::EventPump) {
         'running: loop {
-            let curr_state = self.state_stack.last_mut().unwrap();
             let mut prev_time = time::Instant::now();
-            for event in event_pump.poll_iter() {
-                match event {
-                    Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                        break 'running
-                    },
-                    _ => curr_state.input_handler(event),
+            let mut transition = {
+                let curr_state = self.state_stack.last_mut().unwrap();
+                for event in event_pump.poll_iter() {
+                    match event {
+                        Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                            break 'running
+                        },
+                        _ => curr_state.input_handler(event),
+                    }
                 }
-            }
 
-            curr_state.run();
-            self.debug.run(curr_state.get_mut_world());
-            self.renderer.run(curr_state.get_mut_world());
-            curr_state.get_mut_world().maintain();
+                let t = curr_state.run();
+                self.debug.run(curr_state.get_mut_world());
+                self.renderer.run(curr_state.get_mut_world());
+                curr_state.get_mut_world().maintain();
+                t
+            };
+
+            match transition {
+                Some(StateTransition::Push(mut x)) => {
+                    self.debug = debug::Debug::new(x.get_mut_world());
+                    self.state_stack.push(x)
+                },
+                Some(StateTransition::Pop) => { self.state_stack.pop(); },
+                None => (),
+            };
             let mut curr_time = time::Instant::now();
             if time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) > curr_time.duration_since(prev_time) {
                 ::std::thread::sleep(time::Duration::new(0, 1_000_000_000u32 / FRAMERATE) - curr_time.duration_since(prev_time));

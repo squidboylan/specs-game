@@ -5,10 +5,13 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use crate::game::input::*;
 use crate::game::*;
+use crate::game::level;
+use std::mem;
 
 pub struct Menu<'a, 'b> {
     dispatcher: Dispatcher<'a, 'b>,
-    pub world: World
+    pub world: World,
+    transition: Option<StateTransition>,
 }
 
 impl<'a, 'b> GameState for Menu<'a, 'b> {
@@ -32,8 +35,13 @@ impl<'a, 'b> GameState for Menu<'a, 'b> {
         &mut self.world
     }
 
-    fn run(&mut self) {
+    fn run(&mut self) -> Option<StateTransition> {
         self.dispatcher.dispatch(&self.world);
+        if self.world.fetch::<TransitionToLevel>().0 == true {
+            Some(StateTransition::Push(Box::new(level::Level::new())))
+        } else {
+            None
+        }
     }
 }
 
@@ -42,49 +50,34 @@ impl<'a, 'b> Menu<'a, 'b> {
         let mut world = World::new();
 
         world.insert(Input::new());
+        world.insert(TransitionToLevel(false));
 
         world.register::<Rect>();
         world.register::<RectColor>();
         world.register::<OnHover>();
         world.register::<Cursor>();
 
-        let cursor_rect = Rect::new(0, 0, 5, 5);
-        let rect = Rect::new(25, 25, 25, 25);
-        let color = RectColor::new(255, 0, 0, 255);
-        let cursor_color = RectColor::new(255, 255, 255, 255);
-
-        world.create_entity()
-            .with(Cursor)
-            .with(cursor_rect.clone())
-            .with(cursor_color.clone())
-            .build();
-        world.create_entity()
-            .with(rect.clone())
-            .with(color.clone())
-            .with(OnHover{f: Box::new(|c| {
-                c.0.r = 255;
-                c.0.g = 255;
-                c.0.b = 255;
-            })})
-            .build();
         let dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input_handler", &[])
             .build();
 
-        Menu { dispatcher, world }
+        Menu { dispatcher, world, transition: None }
     }
 }
 
 pub struct InputHandler;
 
 impl<'a> System<'a> for InputHandler {
-    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, OnHover>, ReadStorage<'a, Cursor>, Read<'a, Input>);
+    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, OnHover>, ReadStorage<'a, Cursor>, Read<'a, Input>, Write<'a, TransitionToLevel>);
 
-    fn run(&mut self, (mut rect, mut color, mut hover, cursor, input): Self::SystemData) {
+    fn run(&mut self, (mut rect, mut color, mut hover, cursor, input, mut trans): Self::SystemData) {
         for (r, c, on_hover) in (&rect, &mut color, &mut hover).join() {
             if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
                 input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
-                (on_hover.f)(c)
+                trans.0 = (on_hover.f)(c);
+                if trans.0 == true {
+                    break;
+                }
             }
         }
         for (r, _) in (&mut rect, &cursor).join() {
@@ -95,10 +88,12 @@ impl<'a> System<'a> for InputHandler {
 }
 
 pub struct OnHover{
-    pub f: Box<dyn FnMut(&mut RectColor) -> () + Send + Sync>,
+    pub f: Box<dyn FnMut(&mut RectColor) -> bool + Send + Sync>,
 }
 
 impl Component for OnHover {
     type Storage = VecStorage<Self>;
 }
 
+#[derive(Default)]
+pub struct TransitionToLevel(bool);
