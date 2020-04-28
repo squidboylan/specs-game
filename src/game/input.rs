@@ -11,8 +11,8 @@ pub struct Keyboard {
 
 #[derive(Default)]
 pub struct Mouse {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
     pub left_tap: bool,
 }
 
@@ -32,8 +32,8 @@ impl Input {
                 D: false,
             },
             mouse: Mouse {
-                x: 0,
-                y: 0,
+                x: 0.0,
+                y: 0.0,
                 left_tap: false,
             }
         }

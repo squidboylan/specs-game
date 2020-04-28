@@ -9,7 +9,4 @@ debug = true
 
 [dependencies]
 specs = '0.16'
-
-[dependencies.sfml]
-version = '0.15'
-default-features = true
+ggez = '0.5'
