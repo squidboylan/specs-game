@@ -3,7 +3,6 @@ use crate::renderer::Rect;
 use crate::renderer::RectColor;
 use crate::game::input::Input;
 use crate::game::*;
-use sfml::window::Event;
 use std::mem;
 
 pub mod input_handler;
@@ -13,11 +12,11 @@ pub use input_handler::*;
 pub use physics::*;
 
 struct Creator {
-    y: i32,
+    y: f32,
 }
 
 impl Creator {
-    pub fn new(y: i32) -> Self {
+    pub fn new(y: f32) -> Self {
         Creator{y}
     }
 }
@@ -27,12 +26,12 @@ impl<'a> System<'a> for Creator {
 
     fn run(&mut self, (entities, lazy): Self::SystemData) {
         let i = entities.create();
-        let r = Rect::new(0, self.y, 10, 10);
+        let r = Rect::new(0.0, self.y, 10.0, 10.0);
         let c = RectColor::new(0, self.y as u8, 0, 255);
         lazy.insert(i, r);
         lazy.insert(i, c);
         lazy.insert(i, Vel{x: 2.0, y: 0.0});
-        self.y+=1;
+        self.y+=1.0;
     }
 }
 
@@ -66,7 +65,7 @@ impl<'a, 'b> Level<'a, 'b> {
         world.register::<Player>();
         world.register::<Cursor>();
 
-        let rect = Rect::new(0, 1, 5, 5);
+        let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
         let color = RectColor::new(255, 0, 0, 255);
         let cursor_color = RectColor::new(255, 255, 255, 255);
 
@@ -96,7 +95,7 @@ impl<'a, 'b> Level<'a, 'b> {
         let dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input_handler", &[])
             .with(Physics, "physics", &["input_handler"])
-            .with(Creator::new(20), "creator", &[])
+            .with(Creator::new(20.0), "creator", &[])
             .build();
 
         Level{ dispatcher, world }
@@ -106,7 +105,7 @@ impl<'a, 'b> Level<'a, 'b> {
         let dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input_handler", &[])
             .with(Physics, "physics", &["input_handler"])
-            .with(Creator::new(20), "creator", &[])
+            .with(Creator::new(20.0), "creator", &[])
             .build();
 
         Level{ dispatcher, world }

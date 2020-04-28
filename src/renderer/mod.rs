@@ -1,34 +1,29 @@
 use std::time;
+use std::env;
 use specs::prelude::*;
-use sfml::{
-    audio::{Sound, SoundBuffer},
-    graphics::{
-        CircleShape, Color, Font, RectangleShape, RenderTarget, RenderWindow, Shape, Text,
-        Transformable,
-    },
-    system::{Clock, Time, Vector2f},
-    window::{ContextSettings, Event, Key, Style},
-};
 use crate::debug::FPS;
+use ggez::graphics::Mesh;
+use ggez::graphics::Drawable;
+use ggez::graphics::Text;
 
-pub const SCREEN_WIDTH: u32 = 1920;
-pub const SCREEN_HEIGHT: u32 = 1080;
+pub const SCREEN_WIDTH: f32 = 1920.0;
+pub const SCREEN_HEIGHT: f32 = 1080.0;
 
 #[derive(Clone)]
-pub struct Rect(pub sfml::graphics::Rect<i32>);
+pub struct Rect(pub ggez::graphics::Rect);
 
 impl Rect {
-    pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
-        Rect(sfml::graphics::Rect::new(x, y, width, height))
+    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
+        Rect(ggez::graphics::Rect::new(x, y, width, height))
     }
 }
 
 #[derive(Clone)]
-pub struct RectColor(pub Color);
+pub struct RectColor(pub ggez::graphics::Color);
 
 impl RectColor {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        RectColor(Color::rgba(r, g, b, a))
+        RectColor(ggez::graphics::Color::from_rgba(r, g, b, a))
     }
 }
 
@@ -40,52 +35,27 @@ impl Component for RectColor {
     type Storage = VecStorage<Self>;
 }
 
-pub struct Renderer {
-    pub window: RenderWindow,
-    font: sfml::system::SfBox<Font>,
-}
+pub struct Renderer;
 
 impl<'a> Renderer {
-    pub fn new() -> Self {
-        let context_settings = ContextSettings {
-            antialiasing_level: 0,
-            ..Default::default()
-        };
-        let mut window = RenderWindow::new(
-            (SCREEN_WIDTH, SCREEN_HEIGHT),
-            "SFML Pong",
-            Style::CLOSE,
-            &context_settings,
-            );
-        window.set_vertical_sync_enabled(true);
-        window.set_mouse_cursor_visible(false);
-        window.set_mouse_cursor_grabbed(true);
-        window.set_framerate_limit(60);
-
-        let font = Font::from_file("fonts/OpenSans-Regular.ttf").unwrap();
-
-        Renderer{ window, font }
+    pub fn new(_ctx: &mut ggez::Context) -> Self {
+        Renderer
     }
 
-    pub fn run(&mut self, world: &'a mut World) {
+    pub fn run(&mut self, ctx: &mut ggez::Context, world: &'a mut World) {
         world.exec(|(rect, rect_color, fps): (ReadStorage<'a, Rect>, ReadStorage<'a, RectColor>, ReadStorage<'a, FPS>)| {
-            //let texture_creator = self.canvas.texture_creator();
-            self.window.clear(Color::rgb(0, 0, 0));
+            ggez::graphics::clear(ctx, ggez::graphics::Color::from_rgb(0, 0, 0));
             for (r, c) in (&rect, &rect_color).join() {
-                let mut drawable_rect = RectangleShape::new();
-                drawable_rect.set_position((r.0.left as f32, r.0.top as f32));
-                drawable_rect.set_size((r.0.width as f32, r.0.height as f32));
-                drawable_rect.set_fill_color(c.0);
-                self.window.draw(&drawable_rect);
+                let mut drawable_rect = Mesh::new_rectangle(ctx, ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()), r.0.clone(), c.0.clone()).unwrap();
+                drawable_rect.draw(ctx, ggez::graphics::DrawParam::new());
             }
-            for (f, r) in (&fps, &rect,).join() {
-                let mut text = Text::new(&f.0.to_string(), &self.font, 40);
-                text.set_position((r.0.left as f32, r.0.top as f32));
-                //text.set_size((r.0.width as f32, r.0.height as f32));
-                text.set_fill_color(Color::rgb(255, 255, 255));
-                self.window.draw(&text);
+            for (f, r) in (&fps, &rect).join() {
+                let mut text = Text::new(f.0.to_string());
+                text.set_bounds([r.0.w, r.0.h], ggez::graphics::Align::Center);
+                let mut draw_params = ggez::graphics::DrawParam::new().dest([r.0.x, r.0.y]);
+                text.draw(ctx, draw_params);
             }
-            self.window.display();
+            ggez::graphics::present(ctx);
         });
     }
 }

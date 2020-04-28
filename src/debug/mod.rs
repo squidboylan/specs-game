@@ -1,6 +1,7 @@
 use specs::prelude::*;
 use std::time;
 use crate::renderer::Rect;
+use crate::renderer::RectColor;
 use crate::renderer::SCREEN_WIDTH;
 use crate::renderer::SCREEN_HEIGHT;
 
@@ -39,10 +40,14 @@ impl<'a, 'b> Debug<'a, 'b> {
     pub fn new(world: &mut World) -> Self {
         world.register::<FPS>();
 
-        let width = 100;
-        let height = 100;
+        let width = 100.0;
+        let height = 100.0;
 
-        world.create_entity().with(FPS(0)).with(Rect::new(SCREEN_WIDTH as i32 - width, SCREEN_HEIGHT as i32 - height, width as i32, height as i32)).build();
+        world.create_entity()
+            .with(FPS(0))
+            .with(Rect::new(SCREEN_WIDTH - width, SCREEN_HEIGHT - height, width, height))
+            .with(RectColor::new(0, 0, 255, 255))
+            .build();
 
         let dispatcher = DispatcherBuilder::new()
             .with(FPSCounter{ last_frame: time::Instant::now() }, "fpscounter", &[])
