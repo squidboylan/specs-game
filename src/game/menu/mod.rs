@@ -58,8 +58,8 @@ impl<'a> System<'a> for InputHandler {
 
     fn run(&mut self, (mut rect, mut color, mut hover, mut click, cursor, mut input, mut trans): Self::SystemData) {
         for (r, c, on_hover) in (&rect, &mut color, &mut hover).join() {
-            if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
-                input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
+            if input.mouse.x >= r.x && input.mouse.x <= r.x + r.w &&
+                input.mouse.y >= r.y && input.mouse.y <= r.y + r.h {
                 *trans = (on_hover.f)(c);
                 match &*trans {
                     Some(x) => return,
@@ -70,8 +70,8 @@ impl<'a> System<'a> for InputHandler {
         if input.mouse.left_tap {
             input.mouse.left_tap = false;
             for (r, c, on_click) in (&rect, &mut color, &mut click).join() {
-                if input.mouse.x >= r.0.x && input.mouse.x <= r.0.x + r.0.w &&
-                    input.mouse.y >= r.0.y && input.mouse.y <= r.0.y + r.0.h {
+                if input.mouse.x >= r.x && input.mouse.x <= r.x + r.w &&
+                    input.mouse.y >= r.y && input.mouse.y <= r.y + r.h {
                     *trans = (on_click.f)();
                     match &*trans {
                         Some(x) => return,
@@ -81,8 +81,8 @@ impl<'a> System<'a> for InputHandler {
             }
         }
         for (r, _) in (&mut rect, &cursor).join() {
-            r.0.x = input.mouse.x - r.0.w/2.0;
-            r.0.y = input.mouse.y - r.0.h/2.0;
+            r.x = input.mouse.x - r.w/2.0;
+            r.y = input.mouse.y - r.h/2.0;
         }
     }
 }

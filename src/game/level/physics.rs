@@ -18,8 +18,8 @@ impl<'a> System<'a> for Physics {
 
     fn run(&mut self, (mut rect, vel): Self::SystemData) {
         for (rect, vel) in (&mut rect, &vel).join() {
-            rect.0.x = rect.0.x + vel.x;
-            rect.0.y = rect.0.y + vel.y;
+            rect.x = rect.x + vel.x;
+            rect.y = rect.y + vel.y;
         }
     }
 }

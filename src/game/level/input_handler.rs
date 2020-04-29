@@ -34,8 +34,8 @@ impl<'a> System<'a> for InputHandler {
         }
 
         for (r, _) in (&mut rect, &cursor).join() {
-            r.0.x = input.mouse.x - r.0.w/2.0;
-            r.0.y = input.mouse.y - r.0.h/2.0;
+            r.x = input.mouse.x - r.w/2.0;
+            r.y = input.mouse.y - r.h/2.0;
         }
     }
 }
