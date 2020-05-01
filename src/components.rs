@@ -11,7 +11,10 @@ impl Component for FPS {
     type Storage = NullStorage<Self>;
 }
 
-pub struct Text(pub String);
+pub struct Text{
+    pub text: String,
+    pub scale: ggez::graphics::Scale,
+}
 
 impl Component for Text {
     type Storage = VecStorage<Self>;

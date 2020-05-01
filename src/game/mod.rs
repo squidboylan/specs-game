@@ -37,7 +37,7 @@ impl<'a, 'b> Game<'a, 'b> {
     pub fn new(ctx: &mut Context) -> Self {
         let mut menu = menu::Menu::new();
         let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
-        let rect = Rect::new(25.0, 25.0, 25.0, 25.0);
+        let rect = Rect::new(renderer::SCREEN_WIDTH/2.0 - 200.0/2.0, 200.0, 100.0, 50.0);
         let color = RectColor::new(255, 0, 0, 255);
         let cursor_color = RectColor::new(255, 255, 255, 255);
 
@@ -49,7 +49,7 @@ impl<'a, 'b> Game<'a, 'b> {
         menu.world.create_entity()
             .with(rect)
             .with(color)
-            .with(Text("Hi".to_string()))
+            .with(Text{ text: "Level 1".to_string(), scale: graphics::Scale::uniform(25.0)})
             .with(OnClick{f: Box::new(|| {
                 use input::Input;
 

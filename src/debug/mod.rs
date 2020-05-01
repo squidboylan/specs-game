@@ -19,7 +19,7 @@ impl<'a> System<'a> for FPSCounter {
         let frame_duration = now.duration_since(self.last_frame);
         let fps_num = 1_000_000_000/frame_duration.subsec_nanos();
         for (_, s) in (&fps_flag, &mut fps_string).join() {
-            s.0 = fps_num.to_string();
+            s.text = fps_num.to_string();
         }
         self.last_frame = now;
     }
@@ -39,7 +39,7 @@ impl<'a, 'b> Debug<'a, 'b> {
 
         world.create_entity()
             .with(FPS)
-            .with(Text(String::new()))
+            .with(Text{ text: String::new(), scale: ggez::graphics::Scale::uniform(50.0) })
             .with(Rect::new(SCREEN_WIDTH - width, SCREEN_HEIGHT - height, width, height))
             .with(RectColor::new(0, 0, 255, 255))
             .build();

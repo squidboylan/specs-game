@@ -5,11 +5,15 @@ use ggez::graphics::Drawable;
 
 pub const SCREEN_WIDTH: f32 = 1920.0;
 pub const SCREEN_HEIGHT: f32 = 1080.0;
-pub struct Renderer;
+
+pub struct Renderer{
+    font: graphics::Font,
+}
 
 impl<'a> Renderer {
-    pub fn new(_ctx: &mut ggez::Context) -> Self {
-        Renderer
+    pub fn new(ctx: &mut ggez::Context) -> Self {
+        let font = graphics::Font::default();
+        Renderer{font}
     }
 
     pub fn run(&mut self, ctx: &mut ggez::Context, world: &'a mut World) {
@@ -20,7 +24,8 @@ impl<'a> Renderer {
                 drawable_rect.draw(ctx, graphics::DrawParam::new()).expect("Failed to draw a rectangle");
             }
             for (t, r) in (&text, &rect).join() {
-                let mut drawable_text = graphics::Text::new(t.0.clone());
+                let mut drawable_text = graphics::Text::new(t.text.clone());
+                drawable_text.set_font(self.font, t.scale);
                 drawable_text.set_bounds([r.w, r.h], graphics::Align::Center);
                 let draw_params = graphics::DrawParam::new().dest([r.x, r.y]);
                 drawable_text.draw(ctx, draw_params).expect("Failed to draw text");
