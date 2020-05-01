@@ -78,7 +78,7 @@ impl<'a, 'b> Level<'a, 'b> {
             .with(Cursor)
             .with(Vel{x: 0.0, y: 0.0})
             .with(rect.clone())
-            .with(cursor_color.clone())
+            .with(cursor_color)
             .build();
         world.create_entity()
             .with(Vel{x: 1.0, y: 0.0})
@@ -87,8 +87,8 @@ impl<'a, 'b> Level<'a, 'b> {
             .build();
         world.create_entity()
             .with(Vel{x: 0.0, y: 2.0})
-            .with(rect.clone())
-            .with(color.clone())
+            .with(rect)
+            .with(color)
             .build();
 
         let dispatcher = DispatcherBuilder::new()

@@ -11,23 +11,23 @@ impl<'a> System<'a> for InputHandler {
     fn run(&mut self, (mut rect, mut vel, player, cursor, input): Self::SystemData) {
         let velocity = 2.0;
         for (v, _) in (&mut vel, &player).join() {
-            if input.keyboard.w == true {
+            if input.keyboard.w {
                 v.y = -1.0 * velocity;
             }
-            if input.keyboard.a == true {
+            if input.keyboard.a {
                 v.x = -1.0 * velocity;
             }
-            if input.keyboard.s == true {
+            if input.keyboard.s {
                 v.y = velocity;
             }
-            if input.keyboard.d == true {
+            if input.keyboard.d {
                 v.x = velocity;
             }
 
-            if input.keyboard.w == false && input.keyboard.s == false {
+            if !input.keyboard.w && !input.keyboard.s {
                 v.y = 0.0;
             }
-            if input.keyboard.a == false && input.keyboard.d == false {
+            if !input.keyboard.a && !input.keyboard.d {
                 v.x = 0.0;
             }
         }

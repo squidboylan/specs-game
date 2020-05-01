@@ -43,12 +43,12 @@ impl<'a, 'b> Game<'a, 'b> {
 
         menu.world.create_entity()
             .with(Cursor)
-            .with(cursor_rect.clone())
-            .with(cursor_color.clone())
+            .with(cursor_rect)
+            .with(cursor_color)
             .build();
         menu.world.create_entity()
-            .with(rect.clone())
-            .with(color.clone())
+            .with(rect)
+            .with(color)
             .with(OnClick{f: Box::new(|| {
                 use input::Input;
 
@@ -77,7 +77,7 @@ impl<'a, 'b> Game<'a, 'b> {
                     .with(Cursor)
                     .with(Vel{x: 0.0, y: 0.0})
                     .with(rect.clone())
-                    .with(cursor_color.clone())
+                    .with(cursor_color)
                     .build();
                 world.create_entity()
                     .with(Vel{x: 1.0, y: 0.0})
@@ -86,8 +86,8 @@ impl<'a, 'b> Game<'a, 'b> {
                     .build();
                 world.create_entity()
                     .with(Vel{x: 0.0, y: 2.0})
-                    .with(rect.clone())
-                    .with(color.clone())
+                    .with(rect)
+                    .with(color)
                     .build();
                 Some(StateTransition::Push(State::Level, world))
             })})
@@ -110,7 +110,7 @@ impl<'a, 'b> Game<'a, 'b> {
 impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let transition = {
-            if self.state_stack.len() == 0 {
+            if self.state_stack.is_empty() {
                 ggez::event::quit(ctx);
                 return Ok(());
             }
@@ -137,7 +137,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        if self.state_stack.len() == 0 {
+        if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return Ok(());
         }
@@ -153,7 +153,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         _keymod: event::KeyMods,
         _repeat: bool,
         ) {
-        if self.state_stack.len() == 0 {
+        if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
         }
         let curr_state = self.state_stack.last_mut().unwrap();
@@ -173,7 +173,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         keycode: event::KeyCode,
         _keymod: event::KeyMods,
         ) {
-        if self.state_stack.len() == 0 {
+        if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;
         }
@@ -195,7 +195,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         _dx: f32,
         _dy: f32
         ) {
-        if self.state_stack.len() == 0 {
+        if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;
         }
@@ -212,7 +212,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         _x: f32,
         _y: f32
         ) {
-        if self.state_stack.len() == 0 {
+        if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;
         }
