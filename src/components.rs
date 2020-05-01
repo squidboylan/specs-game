@@ -4,9 +4,16 @@ use std::ops::DerefMut;
 
 use crate::game::StateTransition;
 
-pub struct FPS(pub u32);
+#[derive(Default)]
+pub struct FPS;
 
 impl Component for FPS {
+    type Storage = NullStorage<Self>;
+}
+
+pub struct Text(pub String);
+
+impl Component for Text {
     type Storage = VecStorage<Self>;
 }
 

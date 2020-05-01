@@ -30,6 +30,7 @@ impl<'a, 'b> Menu<'a, 'b> {
 
         world.register::<Rect>();
         world.register::<RectColor>();
+        world.register::<Text>();
         world.register::<OnHover>();
         world.register::<OnClick>();
         world.register::<Cursor>();

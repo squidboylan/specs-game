@@ -49,6 +49,7 @@ impl<'a, 'b> Game<'a, 'b> {
         menu.world.create_entity()
             .with(rect)
             .with(color)
+            .with(Text("Hi".to_string()))
             .with(OnClick{f: Box::new(|| {
                 use input::Input;
 
@@ -91,13 +92,13 @@ impl<'a, 'b> Game<'a, 'b> {
                     .build();
                 Some(StateTransition::Push(State::Level, world))
             })})
-        .with(OnHover{f: Box::new(|c| {
-            c.0.r = 255.0;
-            c.0.g = 255.0;
-            c.0.b = 255.0;
-            None
-        })})
-        .build();
+            .with(OnHover{f: Box::new(|c| {
+                c.0.r = 255.0;
+                c.0.g = 255.0;
+                c.0.b = 255.0;
+                None
+            })})
+            .build();
         let debug = debug::Debug::new(&mut menu.world);
         let renderer = renderer::Renderer::new(ctx);
         let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
