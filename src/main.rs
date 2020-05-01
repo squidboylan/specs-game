@@ -3,6 +3,7 @@ use ggez::{self, *};
 mod game;
 mod renderer;
 mod debug;
+mod components;
 
 fn main() {
     let cb = ContextBuilder::new("game-template", "ggez")

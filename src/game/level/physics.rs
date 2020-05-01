@@ -1,17 +1,7 @@
 use specs::prelude::*;
-use crate::renderer::Rect;
-use crate::renderer::RectColor;
+use crate::components::*;
 
 pub struct Physics;
-
-pub struct Vel{
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Component for Vel {
-    type Storage = VecStorage<Self>;
-}
 
 impl<'a> System<'a> for Physics {
     type SystemData = (WriteStorage<'a, Rect>, ReadStorage<'a, Vel>);

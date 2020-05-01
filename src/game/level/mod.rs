@@ -1,6 +1,5 @@
 use specs::prelude::*;
-use crate::renderer::Rect;
-use crate::renderer::RectColor;
+use crate::components::*;
 use crate::game::input::Input;
 use crate::game::*;
 use std::mem;

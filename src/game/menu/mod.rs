@@ -1,9 +1,8 @@
 use specs::prelude::*;
-use crate::renderer::Rect;
-use crate::renderer::RectColor;
 use crate::game::input::*;
 use crate::game::*;
 use crate::game::level;
+use crate::components::*;
 use std::mem;
 
 pub struct Menu<'a, 'b> {
@@ -85,20 +84,4 @@ impl<'a> System<'a> for InputHandler {
             r.y = input.mouse.y - r.h/2.0;
         }
     }
-}
-
-pub struct OnHover{
-    pub f: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
-}
-
-impl Component for OnHover {
-    type Storage = VecStorage<Self>;
-}
-
-pub struct OnClick{
-    pub f: Box<dyn FnMut() -> Option<StateTransition> + Send + Sync>,
-}
-
-impl Component for OnClick {
-    type Storage = VecStorage<Self>;
 }

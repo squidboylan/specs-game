@@ -1,8 +1,7 @@
 use specs::prelude::*;
-use super::physics::Vel;
 use crate::game::input::Input;
 use crate::game::*;
-use crate::renderer::Rect;
+use crate::components::*;
 
 pub struct InputHandler;
 

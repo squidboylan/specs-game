@@ -1,15 +1,8 @@
 use specs::prelude::*;
 use std::time;
-use crate::renderer::Rect;
-use crate::renderer::RectColor;
+use crate::components::*;
 use crate::renderer::SCREEN_WIDTH;
 use crate::renderer::SCREEN_HEIGHT;
-
-pub struct FPS(pub u32);
-
-impl Component for FPS {
-    type Storage = VecStorage<Self>;
-}
 
 struct FPSCounter {
     last_frame: time::Instant,

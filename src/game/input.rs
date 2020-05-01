@@ -1,5 +1,4 @@
 use specs::prelude::*;
-use crate::renderer::Rect;
 
 #[derive(Default)]
 pub struct Keyboard {

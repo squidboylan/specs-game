@@ -1,6 +1,7 @@
 use specs::prelude::*;
 use crate::renderer;
 use crate::debug;
+use crate::components::*;
 use ggez::{self, *};
 use ggez::event::KeyCode;
 use ggez::event::MouseButton;
@@ -37,10 +38,10 @@ pub struct Game<'a, 'b> {
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new(ctx: &mut Context) -> Self {
         let mut menu = menu::Menu::new();
-        let cursor_rect = renderer::Rect::new(0.0, 0.0, 5.0, 5.0);
-        let rect = renderer::Rect::new(25.0, 25.0, 25.0, 25.0);
-        let color = renderer::RectColor::new(255, 0, 0, 255);
-        let cursor_color = renderer::RectColor::new(255, 255, 255, 255);
+        let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
+        let rect = Rect::new(25.0, 25.0, 25.0, 25.0);
+        let color = RectColor::new(255, 0, 0, 255);
+        let cursor_color = RectColor::new(255, 255, 255, 255);
 
         menu.world.create_entity()
             .with(Cursor)
@@ -50,10 +51,7 @@ impl<'a, 'b> Game<'a, 'b> {
         menu.world.create_entity()
             .with(rect.clone())
             .with(color.clone())
-            .with(menu::OnClick{f: Box::new(|| {
-                use crate::renderer::Rect;
-                use crate::renderer::RectColor;
-                use level::physics::*;
+            .with(OnClick{f: Box::new(|| {
                 use input::Input;
 
                 let mut world = World::new();
@@ -95,7 +93,7 @@ impl<'a, 'b> Game<'a, 'b> {
                     .build();
                 Some(StateTransition::Push(State::Level, world))
             })})
-        .with(menu::OnHover{f: Box::new(|c| {
+        .with(OnHover{f: Box::new(|c| {
             c.0.r = 255.0;
             c.0.g = 255.0;
             c.0.b = 255.0;
@@ -227,18 +225,4 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             _ => println!("Mouse Button Pressed: {:?}", button),
         };
     }
-}
-
-#[derive(Default)]
-pub struct Player;
-
-impl Component for Player {
-    type Storage = NullStorage<Self>;
-}
-
-#[derive(Default)]
-pub struct Cursor;
-
-impl Component for Cursor {
-    type Storage = NullStorage<Self>;
 }
