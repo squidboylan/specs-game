@@ -1,11 +1,11 @@
-use specs::prelude::*;
+
 
 #[derive(Default)]
 pub struct Keyboard {
-    pub W: bool,
-    pub A: bool,
-    pub S: bool,
-    pub D: bool,
+    pub w: bool,
+    pub a: bool,
+    pub s: bool,
+    pub d: bool,
 }
 
 #[derive(Default)]
@@ -25,10 +25,10 @@ impl Input {
     pub fn new() -> Self {
         Input {
             keyboard: Keyboard {
-                W: false,
-                A: false,
-                S: false,
-                D: false,
+                w: false,
+                a: false,
+                s: false,
+                d: false,
             },
             mouse: Mouse {
                 x: 0.0,

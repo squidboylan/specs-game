@@ -1,8 +1,8 @@
 use specs::prelude::*;
 use crate::game::input::*;
 use crate::game::*;
-use crate::game::level;
-use crate::components::*;
+
+
 use std::mem;
 
 pub struct Menu<'a, 'b> {
@@ -61,19 +61,19 @@ impl<'a> System<'a> for InputHandler {
                 input.mouse.y >= r.y && input.mouse.y <= r.y + r.h {
                 *trans = (on_hover.f)(c);
                 match &*trans {
-                    Some(x) => return,
+                    Some(_x) => return,
                     None => (),
                 }
             }
         }
         if input.mouse.left_tap {
             input.mouse.left_tap = false;
-            for (r, c, on_click) in (&rect, &mut color, &mut click).join() {
+            for (r, _c, on_click) in (&rect, &mut color, &mut click).join() {
                 if input.mouse.x >= r.x && input.mouse.x <= r.x + r.w &&
                     input.mouse.y >= r.y && input.mouse.y <= r.y + r.h {
                     *trans = (on_click.f)();
                     match &*trans {
-                        Some(x) => return,
+                        Some(_x) => return,
                         None => (),
                     }
                 }

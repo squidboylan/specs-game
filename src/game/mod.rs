@@ -5,13 +5,11 @@ use crate::components::*;
 use ggez::{self, *};
 use ggez::event::KeyCode;
 use ggez::event::MouseButton;
-use std::time;
+
 
 mod level;
 mod menu;
 mod input;
-
-const FRAMERATE: u32 = 60;
 
 pub trait GameState {
     fn get_mut_world(&mut self) -> &mut World;
@@ -100,8 +98,8 @@ impl<'a, 'b> Game<'a, 'b> {
             None
         })})
         .build();
-        let mut debug = debug::Debug::new(&mut menu.world);
-        let mut renderer = renderer::Renderer::new(ctx);
+        let debug = debug::Debug::new(&mut menu.world);
+        let renderer = renderer::Renderer::new(ctx);
         let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
 
@@ -111,7 +109,7 @@ impl<'a, 'b> Game<'a, 'b> {
 
 impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut transition = {
+        let transition = {
             if self.state_stack.len() == 0 {
                 ggez::event::quit(ctx);
                 return Ok(());
@@ -160,10 +158,10 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         }
         let curr_state = self.state_stack.last_mut().unwrap();
         match keycode {
-            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.W = true,
-            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.A = true,
-            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.S = true,
-            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.D = true,
+            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.w = true,
+            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.a = true,
+            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.s = true,
+            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.d = true,
             KeyCode::Escape => *curr_state.get_mut_world().fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
             _ => println!("Pressed: {:?}", keycode),
         };
@@ -181,10 +179,10 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         }
         let curr_state = self.state_stack.last_mut().unwrap();
         match keycode {
-            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.W = false,
-            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.A = false,
-            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.S = false,
-            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.D = false,
+            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.w = false,
+            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.a = false,
+            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.s = false,
+            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.d = false,
             _ => println!("Released: {:?}", keycode),
         };
     }

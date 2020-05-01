@@ -11,7 +11,7 @@ fn main() {
         .window_mode(conf::WindowMode::default().dimensions(renderer::SCREEN_WIDTH, renderer::SCREEN_HEIGHT));
     let (ctx, ev) = &mut cb.build().unwrap();
 
-    ggez::input::mouse::set_cursor_grabbed(ctx, true);
+    ggez::input::mouse::set_cursor_grabbed(ctx, true).unwrap();
     ggez::input::mouse::set_cursor_hidden(ctx, true);
 
     let mut game = game::Game::new(ctx);

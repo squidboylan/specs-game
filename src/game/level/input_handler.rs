@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use crate::game::input::Input;
 use crate::game::*;
-use crate::components::*;
+
 
 pub struct InputHandler;
 
@@ -11,23 +11,23 @@ impl<'a> System<'a> for InputHandler {
     fn run(&mut self, (mut rect, mut vel, player, cursor, input): Self::SystemData) {
         let velocity = 2.0;
         for (v, _) in (&mut vel, &player).join() {
-            if input.keyboard.W == true {
+            if input.keyboard.w == true {
                 v.y = -1.0 * velocity;
             }
-            if input.keyboard.A == true {
+            if input.keyboard.a == true {
                 v.x = -1.0 * velocity;
             }
-            if input.keyboard.S == true {
+            if input.keyboard.s == true {
                 v.y = velocity;
             }
-            if input.keyboard.D == true {
+            if input.keyboard.d == true {
                 v.x = velocity;
             }
 
-            if input.keyboard.W == false && input.keyboard.S == false {
+            if input.keyboard.w == false && input.keyboard.s == false {
                 v.y = 0.0;
             }
-            if input.keyboard.A == false && input.keyboard.D == false {
+            if input.keyboard.a == false && input.keyboard.d == false {
                 v.x = 0.0;
             }
         }
