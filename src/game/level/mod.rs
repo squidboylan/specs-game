@@ -46,7 +46,9 @@ impl<'a, 'b> GameState for Level<'a, 'b> {
     }
 
     fn run(&mut self) -> Option<StateTransition> {
-        self.dispatcher.dispatch(&self.world);
+        if self.world.fetch_mut::<Option<StateTransition>>().is_none() {
+            self.dispatcher.dispatch(&self.world);
+        }
         mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
     }
 }

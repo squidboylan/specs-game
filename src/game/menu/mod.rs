@@ -16,7 +16,9 @@ impl<'a, 'b> GameState for Menu<'a, 'b> {
     }
 
     fn run(&mut self) -> Option<StateTransition> {
-        self.dispatcher.dispatch(&self.world);
+        if self.world.fetch_mut::<Option<StateTransition>>().is_none() {
+            self.dispatcher.dispatch(&self.world);
+        }
         mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
     }
 }
@@ -31,7 +33,7 @@ impl<'a, 'b> Menu<'a, 'b> {
         world.register::<Rect>();
         world.register::<RectColor>();
         world.register::<Text>();
-        world.register::<OnHover>();
+        world.register::<Hover>();
         world.register::<OnClick>();
         world.register::<Cursor>();
 
@@ -54,13 +56,19 @@ impl<'a, 'b> Menu<'a, 'b> {
 pub struct InputHandler;
 
 impl<'a> System<'a> for InputHandler {
-    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, OnHover>, WriteStorage<'a, OnClick>, ReadStorage<'a, Cursor>, Write<'a, Input>, Write<'a, Option<StateTransition>>);
+    type SystemData = (WriteStorage<'a, Rect>, WriteStorage<'a, RectColor>, WriteStorage<'a, Hover>, WriteStorage<'a, OnClick>, ReadStorage<'a, Cursor>, Write<'a, Input>, Write<'a, Option<StateTransition>>);
 
     fn run(&mut self, (mut rect, mut color, mut hover, mut click, cursor, mut input, mut trans): Self::SystemData) {
-        for (r, c, on_hover) in (&rect, &mut color, &mut hover).join() {
+        for (r, c, hover) in (&rect, &mut color, &mut hover).join() {
             if input.mouse.x >= r.x && input.mouse.x <= r.x + r.w &&
                 input.mouse.y >= r.y && input.mouse.y <= r.y + r.h {
-                *trans = (on_hover.f)(c);
+                *trans = hover.on_hover(c);
+                match &*trans {
+                    Some(_x) => return,
+                    None => (),
+                }
+            } else {
+                *trans = hover.off_hover(c);
                 match &*trans {
                     Some(_x) => return,
                     None => (),

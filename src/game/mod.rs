@@ -92,12 +92,20 @@ impl<'a, 'b> Game<'a, 'b> {
                     .build();
                 Some(StateTransition::Push(State::Level, world))
             })})
-            .with(OnHover{f: Box::new(|c| {
-                c.0.r = 255.0;
-                c.0.g = 255.0;
-                c.0.b = 255.0;
-                None
-            })})
+            .with(Hover::new(
+                Box::new(|c| {
+                    c.0.r = 255.0;
+                    c.0.g = 255.0;
+                    c.0.b = 255.0;
+                    None
+                }),
+                Box::new(|c| {
+                    c.0.r = 255.0;
+                    c.0.g = 0.0;
+                    c.0.b = 0.0;
+                    None
+                })),
+            )
             .build();
         let debug = debug::Debug::new(&mut menu.world);
         let renderer = renderer::Renderer::new(ctx);

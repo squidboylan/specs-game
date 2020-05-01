@@ -87,11 +87,41 @@ impl DerefMut for RectColor {
     }
 }
 
-pub struct OnHover{
-    pub f: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+pub struct Hover{
+    pub on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+    pub off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+    hovering: bool,
 }
 
-impl Component for OnHover {
+impl Hover {
+    pub fn new(on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>, off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>) -> Self {
+        Hover {
+            on_hover_fn,
+            off_hover_fn,
+            hovering: false,
+        }
+    }
+
+    pub fn on_hover(&mut self, c: &mut RectColor) -> Option<StateTransition> {
+        if !self.hovering {
+            self.hovering = true;
+            (self.on_hover_fn)(c)
+        } else {
+            None
+        }
+    }
+
+    pub fn off_hover(&mut self, c: &mut RectColor) -> Option<StateTransition> {
+        if self.hovering {
+            self.hovering = false;
+            (self.off_hover_fn)(c)
+        } else {
+            None
+        }
+    }
+}
+
+impl Component for Hover {
     type Storage = VecStorage<Self>;
 }
 
