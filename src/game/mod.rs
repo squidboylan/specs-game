@@ -2,67 +2,89 @@ use specs::prelude::*;
 use crate::renderer;
 use crate::debug;
 use crate::components::*;
+use crate::systems::*;
 use ggez::{self, *};
 use ggez::event::KeyCode;
 use ggez::event::MouseButton;
+use std::mem;
 
 
-mod level;
-mod menu;
-mod input;
+pub mod input;
 
-pub trait GameState {
-    fn get_mut_world(&mut self) -> &mut World;
+struct GameState<'a, 'b> {
+    dispatcher: Dispatcher<'a, 'b>,
+    pub world: World,
+}
 
-    fn run(&mut self) -> Option<StateTransition>;
+impl<'a, 'b> GameState<'a, 'b> {
+    pub fn new(world: World, dispatcher: Dispatcher<'a, 'b>) -> Self {
+        Self {dispatcher, world}
+    }
+
+    pub fn from_world(world: World) -> Self {
+        let dispatcher = DispatcherBuilder::new()
+            .with(InputHandler, "input", &[])
+            .with(Creator::new(0.0), "Creator", &[])
+            .with(Physics, "physics", &["input"])
+            .build();
+        Self {dispatcher, world}
+    }
+
+    pub fn initialized_world() -> World {
+        let mut menu_world = World::new();
+        menu_world.insert(input::Input::new());
+        menu_world.insert::<Option<StateTransition>>(None);
+
+        menu_world.register::<Rect>();
+        menu_world.register::<RectColor>();
+        menu_world.register::<Vel>();
+        menu_world.register::<Text>();
+        menu_world.register::<Hover>();
+        menu_world.register::<OnClick>();
+        menu_world.register::<Player>();
+        menu_world.register::<Cursor>();
+        menu_world
+    }
+
+    fn run(&mut self) -> Option<StateTransition> {
+        if self.world.fetch_mut::<Option<StateTransition>>().is_none() {
+            self.dispatcher.dispatch(&self.world);
+        }
+        mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
+    }
 }
 
 pub enum StateTransition {
-    Push(State, World),
+    Push(World),
     Pop,
 }
 
-pub enum State {
-    Level,
-    Menu
-}
 
 pub struct Game<'a, 'b> {
     debug: debug::Debug<'a, 'b>,
     renderer: renderer::Renderer,
-    state_stack: Vec<Box<dyn GameState>>,
+    state_stack: Vec<Box<GameState<'a, 'b>>>,
 }
 
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new(ctx: &mut Context) -> Self {
-        let mut menu = menu::Menu::new();
+        let mut menu_world = GameState::initialized_world();
         let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
         let rect = Rect::new(renderer::SCREEN_WIDTH/2.0 - 200.0/2.0, 200.0, 100.0, 50.0);
         let color = RectColor::new(255, 0, 0, 255);
         let cursor_color = RectColor::new(255, 255, 255, 255);
 
-        menu.world.create_entity()
+        menu_world.create_entity()
             .with(Cursor)
             .with(cursor_rect)
             .with(cursor_color)
             .build();
-        menu.world.create_entity()
+        menu_world.create_entity()
             .with(rect)
             .with(color)
             .with(Text{ text: "Level 1".to_string(), scale: graphics::Scale::uniform(25.0)})
             .with(OnClick{f: Box::new(|| {
-                use input::Input;
-
-                let mut world = World::new();
-
-                world.insert(Input::new());
-                world.insert::<Option<StateTransition>>(None);
-
-                world.register::<Rect>();
-                world.register::<RectColor>();
-                world.register::<Vel>();
-                world.register::<Player>();
-                world.register::<Cursor>();
+                let mut world = GameState::initialized_world();
 
                 let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
                 let color = RectColor::new(255, 0, 0, 255);
@@ -90,7 +112,7 @@ impl<'a, 'b> Game<'a, 'b> {
                     .with(rect)
                     .with(color)
                     .build();
-                Some(StateTransition::Push(State::Level, world))
+                Some(StateTransition::Push(world))
             })})
             .with(Hover::new(
                 Box::new(|c| {
@@ -107,9 +129,13 @@ impl<'a, 'b> Game<'a, 'b> {
                 })),
             )
             .build();
-        let debug = debug::Debug::new(&mut menu.world);
+        let menu_dispatcher = DispatcherBuilder::new()
+            .with(InputHandler, "input_handler", &[])
+            .build();
+        let debug = debug::Debug::new(&mut menu_world);
+        let menu = GameState::new(menu_world, menu_dispatcher);
         let renderer = renderer::Renderer::new(ctx);
-        let mut state_stack: Vec<Box<dyn GameState>> = Vec::new();
+        let mut state_stack: Vec<Box<GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
 
         Game {debug, renderer, state_stack}
@@ -125,19 +151,15 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             }
             let curr_state = self.state_stack.last_mut().unwrap();
             let t = curr_state.run();
-            self.debug.run(curr_state.get_mut_world());
-            curr_state.get_mut_world().maintain();
+            self.debug.run(&mut curr_state.world);
+            curr_state.world.maintain();
             t
         };
 
         match transition {
-            Some(StateTransition::Push(State::Level, mut world)) => {
+            Some(StateTransition::Push(mut world)) => {
                 self.debug = debug::Debug::new(&mut world);
-                self.state_stack.push(Box::new(level::Level::from_world(world)));
-            },
-            Some(StateTransition::Push(State::Menu, mut world)) => {
-                self.debug = debug::Debug::new(&mut world);
-                self.state_stack.push(Box::new(menu::Menu::from_world(world)));
+                self.state_stack.push(Box::new(GameState::from_world(world)));
             },
             Some(StateTransition::Pop) => { self.state_stack.pop(); },
             None => (),
@@ -151,7 +173,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             return Ok(());
         }
         let curr_state = self.state_stack.last_mut().unwrap();
-        self.renderer.run(ctx, curr_state.get_mut_world());
+        self.renderer.run(ctx, &mut curr_state.world);
         Ok(())
     }
 
@@ -167,11 +189,11 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         }
         let curr_state = self.state_stack.last_mut().unwrap();
         match keycode {
-            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.w = true,
-            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.a = true,
-            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.s = true,
-            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.d = true,
-            KeyCode::Escape => *curr_state.get_mut_world().fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
+            KeyCode::W => curr_state.world.fetch_mut::<input::Input>().keyboard.w = true,
+            KeyCode::A => curr_state.world.fetch_mut::<input::Input>().keyboard.a = true,
+            KeyCode::S => curr_state.world.fetch_mut::<input::Input>().keyboard.s = true,
+            KeyCode::D => curr_state.world.fetch_mut::<input::Input>().keyboard.d = true,
+            KeyCode::Escape => *curr_state.world.fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
             _ => println!("Pressed: {:?}", keycode),
         };
     }
@@ -188,10 +210,10 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         }
         let curr_state = self.state_stack.last_mut().unwrap();
         match keycode {
-            KeyCode::W => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.w = false,
-            KeyCode::A => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.a = false,
-            KeyCode::S => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.s = false,
-            KeyCode::D => curr_state.get_mut_world().fetch_mut::<input::Input>().keyboard.d = false,
+            KeyCode::W => curr_state.world.fetch_mut::<input::Input>().keyboard.w = false,
+            KeyCode::A => curr_state.world.fetch_mut::<input::Input>().keyboard.a = false,
+            KeyCode::S => curr_state.world.fetch_mut::<input::Input>().keyboard.s = false,
+            KeyCode::D => curr_state.world.fetch_mut::<input::Input>().keyboard.d = false,
             _ => println!("Released: {:?}", keycode),
         };
     }
@@ -209,7 +231,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             return;
         }
         let curr_state = self.state_stack.last_mut().unwrap();
-        let mut input = curr_state.get_mut_world().fetch_mut::<input::Input>();
+        let mut input = curr_state.world.fetch_mut::<input::Input>();
         input.mouse.x = x;
         input.mouse.y = y;
     }
@@ -226,9 +248,8 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             return;
         }
         let curr_state = self.state_stack.last_mut().unwrap();
-        curr_state.get_mut_world().fetch_mut::<input::Input>();
         match button {
-            MouseButton::Left => curr_state.get_mut_world().fetch_mut::<input::Input>().mouse.left_tap = true,
+            MouseButton::Left => curr_state.world.fetch_mut::<input::Input>().mouse.left_tap = true,
             _ => println!("Mouse Button Pressed: {:?}", button),
         };
     }

@@ -1,5 +1,3 @@
-
-
 #[derive(Default)]
 pub struct Keyboard {
     pub w: bool,

@@ -4,6 +4,7 @@ mod game;
 mod renderer;
 mod debug;
 mod components;
+mod systems;
 
 fn main() {
     let cb = ContextBuilder::new("game-template", "ggez")
