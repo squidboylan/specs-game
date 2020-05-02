@@ -11,7 +11,7 @@ pub struct Renderer{
 }
 
 impl<'a> Renderer {
-    pub fn new(ctx: &mut ggez::Context) -> Self {
+    pub fn new(_ctx: &mut ggez::Context) -> Self {
         let font = graphics::Font::default();
         Renderer{font}
     }
