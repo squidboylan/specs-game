@@ -1,15 +1,17 @@
 use ggez::{self, *};
 
+mod components;
+mod debug;
 mod game;
 mod renderer;
-mod debug;
-mod components;
 mod systems;
 
 fn main() {
     let cb = ContextBuilder::new("game-template", "ggez")
         .window_setup(conf::WindowSetup::default().title("game template"))
-        .window_mode(conf::WindowMode::default().dimensions(renderer::SCREEN_WIDTH, renderer::SCREEN_HEIGHT));
+        .window_mode(
+            conf::WindowMode::default().dimensions(renderer::SCREEN_WIDTH, renderer::SCREEN_HEIGHT),
+        );
     let (ctx, ev) = &mut cb.build().unwrap();
 
     ggez::input::mouse::set_cursor_grabbed(ctx, true).unwrap();

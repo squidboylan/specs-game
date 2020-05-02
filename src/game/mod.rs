@@ -1,13 +1,12 @@
-use specs::prelude::*;
-use crate::renderer;
-use crate::debug;
 use crate::components::*;
+use crate::debug;
+use crate::renderer;
 use crate::systems::*;
-use ggez::{self, *};
 use ggez::event::KeyCode;
 use ggez::event::MouseButton;
+use ggez::{self, *};
+use specs::prelude::*;
 use std::mem;
-
 
 pub mod input;
 
@@ -18,7 +17,7 @@ struct GameState<'a, 'b> {
 
 impl<'a, 'b> GameState<'a, 'b> {
     pub fn new(world: World, dispatcher: Dispatcher<'a, 'b>) -> Self {
-        Self {dispatcher, world}
+        Self { dispatcher, world }
     }
 
     pub fn from_world(world: World) -> Self {
@@ -27,7 +26,7 @@ impl<'a, 'b> GameState<'a, 'b> {
             .with(Creator::new(0.0), "Creator", &[])
             .with(Physics, "physics", &["input"])
             .build();
-        Self {dispatcher, world}
+        Self { dispatcher, world }
     }
 
     pub fn initialized_world() -> World {
@@ -50,7 +49,10 @@ impl<'a, 'b> GameState<'a, 'b> {
         if self.world.fetch_mut::<Option<StateTransition>>().is_none() {
             self.dispatcher.dispatch(&self.world);
         }
-        mem::replace(&mut *self.world.fetch_mut::<Option<StateTransition>>(), None)
+        mem::replace(
+            &mut *self.world.fetch_mut::<Option<StateTransition>>(),
+            None,
+        )
     }
 }
 
@@ -58,7 +60,6 @@ pub enum StateTransition {
     Push(World),
     Pop,
 }
-
 
 pub struct Game<'a, 'b> {
     debug: debug::Debug<'a, 'b>,
@@ -70,50 +71,66 @@ impl<'a, 'b> Game<'a, 'b> {
     pub fn new(ctx: &mut Context) -> Self {
         let mut menu_world = GameState::initialized_world();
         let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
-        let rect = Rect::new(renderer::SCREEN_WIDTH/2.0 - 200.0/2.0, 200.0, 100.0, 50.0);
+        let rect = Rect::new(
+            renderer::SCREEN_WIDTH / 2.0 - 200.0 / 2.0,
+            200.0,
+            100.0,
+            50.0,
+        );
         let color = RectColor::new(255, 0, 0, 255);
         let cursor_color = RectColor::new(255, 255, 255, 255);
 
-        menu_world.create_entity()
+        menu_world
+            .create_entity()
             .with(Cursor)
             .with(cursor_rect)
             .with(cursor_color)
             .build();
-        menu_world.create_entity()
+        menu_world
+            .create_entity()
             .with(rect)
             .with(color)
-            .with(Text{ text: "Level 1".to_string(), scale: graphics::Scale::uniform(25.0)})
-            .with(OnClick{f: Box::new(|| {
-                let mut world = GameState::initialized_world();
+            .with(Text {
+                text: "Level 1".to_string(),
+                scale: graphics::Scale::uniform(25.0),
+            })
+            .with(OnClick {
+                f: Box::new(|| {
+                    let mut world = GameState::initialized_world();
 
-                let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
-                let color = RectColor::new(255, 0, 0, 255);
-                let cursor_color = RectColor::new(255, 255, 255, 255);
+                    let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
+                    let color = RectColor::new(255, 0, 0, 255);
+                    let cursor_color = RectColor::new(255, 255, 255, 255);
 
-                world.create_entity()
-                    .with(Player)
-                    .with(Vel{x: 0.0, y: 0.0})
-                    .with(rect.clone())
-                    .with(color.clone())
-                    .build();
-                world.create_entity()
-                    .with(Cursor)
-                    .with(Vel{x: 0.0, y: 0.0})
-                    .with(rect.clone())
-                    .with(cursor_color)
-                    .build();
-                world.create_entity()
-                    .with(Vel{x: 1.0, y: 0.0})
-                    .with(rect.clone())
-                    .with(color.clone())
-                    .build();
-                world.create_entity()
-                    .with(Vel{x: 0.0, y: 2.0})
-                    .with(rect)
-                    .with(color)
-                    .build();
-                Some(StateTransition::Push(world))
-            })})
+                    world
+                        .create_entity()
+                        .with(Player)
+                        .with(Vel { x: 0.0, y: 0.0 })
+                        .with(rect.clone())
+                        .with(color.clone())
+                        .build();
+                    world
+                        .create_entity()
+                        .with(Cursor)
+                        .with(Vel { x: 0.0, y: 0.0 })
+                        .with(rect.clone())
+                        .with(cursor_color)
+                        .build();
+                    world
+                        .create_entity()
+                        .with(Vel { x: 1.0, y: 0.0 })
+                        .with(rect.clone())
+                        .with(color.clone())
+                        .build();
+                    world
+                        .create_entity()
+                        .with(Vel { x: 0.0, y: 2.0 })
+                        .with(rect)
+                        .with(color)
+                        .build();
+                    Some(StateTransition::Push(world))
+                }),
+            })
             .with(Hover::new(
                 Box::new(|c| {
                     c.0.r = 255.0;
@@ -126,8 +143,8 @@ impl<'a, 'b> Game<'a, 'b> {
                     c.0.g = 0.0;
                     c.0.b = 0.0;
                     None
-                })),
-            )
+                }),
+            ))
             .build();
         let menu_dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input_handler", &[])
@@ -138,7 +155,11 @@ impl<'a, 'b> Game<'a, 'b> {
         let mut state_stack: Vec<Box<GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
 
-        Game {debug, renderer, state_stack}
+        Game {
+            debug,
+            renderer,
+            state_stack,
+        }
     }
 }
 
@@ -159,9 +180,12 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         match transition {
             Some(StateTransition::Push(mut world)) => {
                 self.debug = debug::Debug::new(&mut world);
-                self.state_stack.push(Box::new(GameState::from_world(world)));
-            },
-            Some(StateTransition::Pop) => { self.state_stack.pop(); },
+                self.state_stack
+                    .push(Box::new(GameState::from_world(world)));
+            }
+            Some(StateTransition::Pop) => {
+                self.state_stack.pop();
+            }
             None => (),
         };
         Ok(())
@@ -183,7 +207,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         keycode: event::KeyCode,
         _keymod: event::KeyMods,
         _repeat: bool,
-        ) {
+    ) {
         if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
         }
@@ -193,7 +217,10 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             KeyCode::A => curr_state.world.fetch_mut::<input::Input>().keyboard.a = true,
             KeyCode::S => curr_state.world.fetch_mut::<input::Input>().keyboard.s = true,
             KeyCode::D => curr_state.world.fetch_mut::<input::Input>().keyboard.d = true,
-            KeyCode::Escape => *curr_state.world.fetch_mut::<Option<StateTransition>>() = Some(StateTransition::Pop),
+            KeyCode::Escape => {
+                *curr_state.world.fetch_mut::<Option<StateTransition>>() =
+                    Some(StateTransition::Pop)
+            }
             _ => println!("Pressed: {:?}", keycode),
         };
     }
@@ -203,7 +230,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         ctx: &mut Context,
         keycode: event::KeyCode,
         _keymod: event::KeyMods,
-        ) {
+    ) {
         if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;
@@ -218,14 +245,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         };
     }
 
-    fn mouse_motion_event(
-        &mut self,
-        ctx: &mut Context,
-        x: f32,
-        y: f32,
-        _dx: f32,
-        _dy: f32
-        ) {
+    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
         if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;
@@ -241,8 +261,8 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
         ctx: &mut Context,
         button: MouseButton,
         _x: f32,
-        _y: f32
-        ) {
+        _y: f32,
+    ) {
         if self.state_stack.is_empty() {
             ggez::event::quit(ctx);
             return;

@@ -32,9 +32,7 @@ impl Input {
                 x: 0.0,
                 y: 0.0,
                 left_tap: false,
-            }
+            },
         }
     }
-
 }
-

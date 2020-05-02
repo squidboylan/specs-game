@@ -11,7 +11,7 @@ impl Component for FPS {
     type Storage = NullStorage<Self>;
 }
 
-pub struct Text{
+pub struct Text {
     pub text: String,
     pub scale: ggez::graphics::Scale,
 }
@@ -33,7 +33,6 @@ pub struct Cursor;
 impl Component for Cursor {
     type Storage = NullStorage<Self>;
 }
-
 
 #[derive(Clone)]
 pub struct Rect(pub ggez::graphics::Rect);
@@ -93,8 +92,11 @@ pub struct Hover {
     hovering: bool,
 }
 
-impl  Hover {
-    pub fn new(on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>, off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>) -> Self {
+impl Hover {
+    pub fn new(
+        on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+        off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+    ) -> Self {
         Hover {
             on_hover_fn,
             off_hover_fn,
@@ -133,7 +135,7 @@ impl Component for OnClick {
     type Storage = VecStorage<Self>;
 }
 
-pub struct Vel{
+pub struct Vel {
     pub x: f32,
     pub y: f32,
 }

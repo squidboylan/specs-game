@@ -1,6 +1,6 @@
-use specs::prelude::*;
 use crate::game::input::*;
 use crate::game::*;
+use specs::prelude::*;
 
 use crate::components::*;
 
@@ -36,8 +36,11 @@ impl<'a> System<'a> for InputHandler {
     type SystemData = InputSystemData<'a>;
     fn run(&mut self, mut data: Self::SystemData) {
         for (r, c, hover) in (&data.rect, &mut data.rect_color, &mut data.hover).join() {
-            if data.input.mouse.x >= r.x && data.input.mouse.x <= r.x + r.w &&
-                data.input.mouse.y >= r.y && data.input.mouse.y <= r.y + r.h {
+            if data.input.mouse.x >= r.x
+                && data.input.mouse.x <= r.x + r.w
+                && data.input.mouse.y >= r.y
+                && data.input.mouse.y <= r.y + r.h
+            {
                 *data.transition = hover.on_hover(c);
                 match &*data.transition {
                     Some(_x) => return,
@@ -54,8 +57,11 @@ impl<'a> System<'a> for InputHandler {
         if data.input.mouse.left_tap {
             data.input.mouse.left_tap = false;
             for (r, _c, on_click) in (&data.rect, &mut data.rect_color, &mut data.click).join() {
-                if data.input.mouse.x >= r.x && data.input.mouse.x <= r.x + r.w &&
-                    data.input.mouse.y >= r.y && data.input.mouse.y <= r.y + r.h {
+                if data.input.mouse.x >= r.x
+                    && data.input.mouse.x <= r.x + r.w
+                    && data.input.mouse.y >= r.y
+                    && data.input.mouse.y <= r.y + r.h
+                {
                     *data.transition = (on_click.f)();
                     match &*data.transition {
                         Some(_x) => return,
@@ -65,8 +71,8 @@ impl<'a> System<'a> for InputHandler {
             }
         }
         for (r, _) in (&mut data.rect, &data.cursor).join() {
-            r.x = data.input.mouse.x - r.w/2.0;
-            r.y = data.input.mouse.y - r.h/2.0;
+            r.x = data.input.mouse.x - r.w / 2.0;
+            r.y = data.input.mouse.y - r.h / 2.0;
         }
 
         let velocity = 2.0;
@@ -94,8 +100,8 @@ impl<'a> System<'a> for InputHandler {
         }
 
         for (r, _) in (&mut data.rect, &data.cursor).join() {
-            r.x = data.input.mouse.x - r.w/2.0;
-            r.y = data.input.mouse.y - r.h/2.0;
+            r.x = data.input.mouse.x - r.w / 2.0;
+            r.y = data.input.mouse.y - r.h / 2.0;
         }
     }
 }
@@ -106,7 +112,7 @@ pub struct Creator {
 
 impl Creator {
     pub fn new(y: f32) -> Self {
-        Creator{y}
+        Creator { y }
     }
 }
 
@@ -119,7 +125,7 @@ impl<'a> System<'a> for Creator {
         let c = RectColor::new(0, self.y as u8, 0, 255);
         lazy.insert(i, r);
         lazy.insert(i, c);
-        lazy.insert(i, Vel{x: 2.0, y: 0.0});
-        self.y+=1.0;
+        lazy.insert(i, Vel { x: 2.0, y: 0.0 });
+        self.y += 1.0;
     }
 }
