@@ -10,23 +10,13 @@ use std::mem;
 
 pub mod input;
 
-struct GameState<'a, 'b> {
-    dispatcher: Dispatcher<'a, 'b>,
+struct GameState {
     pub world: World,
 }
 
-impl<'a, 'b> GameState<'a, 'b> {
-    pub fn new(world: World, dispatcher: Dispatcher<'a, 'b>) -> Self {
-        Self { dispatcher, world }
-    }
-
-    pub fn from_world(world: World) -> Self {
-        let dispatcher = DispatcherBuilder::new()
-            .with(InputHandler, "input", &[])
-            .with(Creator::new(0.0), "Creator", &[])
-            .with(Physics, "physics", &["input"])
-            .build();
-        Self { dispatcher, world }
+impl GameState {
+    pub fn new(world: World) -> Self {
+        Self { world }
     }
 
     pub fn initialized_world() -> World {
@@ -44,16 +34,6 @@ impl<'a, 'b> GameState<'a, 'b> {
         menu_world.register::<Cursor>();
         menu_world
     }
-
-    fn run(&mut self) -> Option<StateTransition> {
-        if self.world.fetch_mut::<Option<StateTransition>>().is_none() {
-            self.dispatcher.dispatch(&self.world);
-        }
-        mem::replace(
-            &mut *self.world.fetch_mut::<Option<StateTransition>>(),
-            None,
-        )
-    }
 }
 
 pub enum StateTransition {
@@ -64,7 +44,8 @@ pub enum StateTransition {
 pub struct Game<'a, 'b> {
     debug: debug::Debug<'a, 'b>,
     renderer: renderer::Renderer,
-    state_stack: Vec<Box<GameState<'a, 'b>>>,
+    state_stack: Vec<Box<GameState>>,
+    dispatcher: Dispatcher<'a, 'b>,
 }
 
 impl<'a, 'b> Game<'a, 'b> {
@@ -146,11 +127,13 @@ impl<'a, 'b> Game<'a, 'b> {
                 }),
             ))
             .build();
-        let menu_dispatcher = DispatcherBuilder::new()
-            .with(InputHandler, "input_handler", &[])
+        let dispatcher = DispatcherBuilder::new()
+            .with(InputHandler, "input", &[])
+            .with(Creator::new(0.0), "Creator", &[])
+            .with(Physics, "physics", &["input"])
             .build();
         let debug = debug::Debug::new(&mut menu_world);
-        let menu = GameState::new(menu_world, menu_dispatcher);
+        let menu = GameState::new(menu_world);
         let renderer = renderer::Renderer::new(ctx);
         let mut state_stack: Vec<Box<GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
@@ -159,6 +142,7 @@ impl<'a, 'b> Game<'a, 'b> {
             debug,
             renderer,
             state_stack,
+            dispatcher,
         }
     }
 }
@@ -171,7 +155,15 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
                 return Ok(());
             }
             let curr_state = self.state_stack.last_mut().unwrap();
-            let t = curr_state.run();
+            let t = {
+                if curr_state.world.fetch_mut::<Option<StateTransition>>().is_none() {
+                    self.dispatcher.dispatch(&curr_state.world);
+                }
+                mem::replace(
+                    &mut *curr_state.world.fetch_mut::<Option<StateTransition>>(),
+                    None,
+                )
+            };
             self.debug.run(&mut curr_state.world);
             curr_state.world.maintain();
             t
@@ -181,7 +173,7 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             Some(StateTransition::Push(mut world)) => {
                 self.debug = debug::Debug::new(&mut world);
                 self.state_stack
-                    .push(Box::new(GameState::from_world(world)));
+                    .push(Box::new(GameState::new(world)));
             }
             Some(StateTransition::Pop) => {
                 self.state_stack.pop();
