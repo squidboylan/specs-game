@@ -34,6 +34,27 @@ impl Component for Cursor {
     type Storage = NullStorage<Self>;
 }
 
+
+#[derive(Clone)]
+pub struct Rotation(pub f32);
+
+impl Component for Rotation {
+    type Storage = VecStorage<Self>;
+}
+
+impl Deref for Rotation {
+    type Target = f32;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Rotation {
+    fn deref_mut(&mut self) -> &mut f32 {
+        &mut self.0
+    }
+}
+
 #[derive(Clone)]
 pub struct Rect(pub ggez::graphics::Rect);
 
@@ -44,6 +65,10 @@ impl Component for Rect {
 impl Rect {
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Rect(ggez::graphics::Rect::new(x, y, width, height))
+    }
+
+    pub fn get_center(&self) -> (f32, f32) {
+        (self.x + self.w/2.0, self.y + self.h/2.0)
     }
 }
 

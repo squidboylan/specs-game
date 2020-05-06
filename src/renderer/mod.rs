@@ -18,13 +18,14 @@ impl<'a> Renderer {
 
     pub fn run(&mut self, ctx: &mut ggez::Context, world: &'a mut World) {
         world.exec(
-            |(rect, rect_color, text): (
+            |(rect, rect_color, text, rotation): (
                 ReadStorage<'a, Rect>,
                 ReadStorage<'a, RectColor>,
                 ReadStorage<'a, Text>,
+                ReadStorage<'a, Rotation>,
             )| {
                 graphics::clear(ctx, graphics::Color::from_rgb(0, 0, 0));
-                for (r, c) in (&rect, &rect_color).join() {
+                for (r, c, rot) in (&rect, &rect_color, rotation.maybe()).join() {
                     let drawable_rect = graphics::Mesh::new_rectangle(
                         ctx,
                         graphics::DrawMode::Fill(graphics::FillOptions::default()),
@@ -32,8 +33,12 @@ impl<'a> Renderer {
                         *c.clone(),
                     )
                     .unwrap();
+                    let mut draw_params = graphics::DrawParam::new();
+                    if let Some(x) = rot {
+                        draw_params = draw_params.rotation(x.0).offset([r.x + r.w/2.0, r.y + r.h/2.0]);
+                    }
                     drawable_rect
-                        .draw(ctx, graphics::DrawParam::new())
+                        .draw(ctx, draw_params)
                         .expect("Failed to draw a rectangle");
                 }
                 for (t, r) in (&text, &rect).join() {

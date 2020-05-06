@@ -26,6 +26,7 @@ impl GameState {
 
         menu_world.register::<Rect>();
         menu_world.register::<RectColor>();
+        menu_world.register::<Rotation>();
         menu_world.register::<Vel>();
         menu_world.register::<Text>();
         menu_world.register::<Hover>();
@@ -79,6 +80,7 @@ impl<'a, 'b> Game<'a, 'b> {
                 f: Box::new(|| {
                     let mut world = GameState::initialized_world();
 
+                    let player_rect = Rect::new(0.0, 0.0, 25.0, 25.0);
                     let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
                     let color = RectColor::new(255, 0, 0, 255);
                     let cursor_color = RectColor::new(255, 255, 255, 255);
@@ -86,8 +88,9 @@ impl<'a, 'b> Game<'a, 'b> {
                     world
                         .create_entity()
                         .with(Player)
+                        .with(Rotation(0.0))
                         .with(Vel { x: 0.0, y: 0.0 })
-                        .with(rect.clone())
+                        .with(player_rect)
                         .with(color.clone())
                         .build();
                     world
@@ -129,7 +132,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .build();
         let dispatcher = DispatcherBuilder::new()
             .with(InputHandler, "input", &[])
-            .with(Creator::new(0.0), "Creator", &[])
+            //.with(Creator::new(0.0), "Creator", &[])
             .with(Physics, "physics", &["input"])
             .build();
         let debug = debug::Debug::new(&mut menu_world);
