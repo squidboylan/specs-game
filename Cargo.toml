@@ -9,6 +9,7 @@ debug = true
 
 [dependencies]
 ggez = '0.5'
+tiled = "0.9"
 
 [dependencies.specs]
 version = '0.16'
