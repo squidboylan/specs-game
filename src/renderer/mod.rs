@@ -1,4 +1,5 @@
 use crate::components::*;
+use crate::game::map::Map;
 use ggez::graphics;
 use ggez::graphics::Drawable;
 use specs::prelude::*;
@@ -58,56 +59,27 @@ impl<'b> Renderer {
             },
         );
     }
+
     pub fn draw_background(&mut self, ctx: &mut ggez::Context, world: &'b mut World) {
         world.exec(
-            |map: Option<Read<'b, tiled::Map>>| {
-                if map.is_none() {
+            |maybe_map: Option<Read<'b, Map>>| {
+                if maybe_map.is_none() {
                     return;
                 }
-                let map = map.unwrap();
+                let map = maybe_map.unwrap();
                 for layer in &map.layers {
-                    for (row_num, tile_row) in layer.tiles.iter().enumerate() {
-                        for (col_num, tile) in tile_row.iter().enumerate() {
-                            let render_data = self.get_tile_data(ctx, &map, tile.gid);
-                            if render_data.is_none() {
-                                continue;
-                            }
-                            let (rect, image) = render_data.unwrap();
-                            let x = col_num as f32 * 32.0;
-                            let y = row_num as f32 * 32.0;
-                            let draw_params = graphics::DrawParam::new().src(rect).dest([x, y]);
-                            image.draw(ctx, draw_params).expect("Failed to draw background tile");
+                    for spot in &layer.map_tiles {
+                        let maybe_tile = map.get_tile(spot.tile_num);
+                        if maybe_tile.is_none() {
+                            continue;
                         }
+                        let tile = maybe_tile.unwrap();
+                        let draw_params = graphics::DrawParam::new().src(tile.rect).dest(spot.loc);
+                        tile.image.draw(ctx, draw_params).expect("Failed to draw background tile");
                     }
                 }
             },
         );
     }
 
-    pub fn get_tile_data(&mut self, ctx: &mut ggez::Context, map: &tiled::Map, gid: u32) -> Option<(graphics::Rect, &graphics::Image)> {
-        for ts in &map.tilesets {
-            if gid >= ts.first_gid {
-                if gid <= ts.first_gid + ts.tilecount.unwrap() as u32 {
-                    // There could be more than one image, but im not gonna worry about that rn
-                    let image = &ts.images[0];
-                    let columns = (image.width as u32 - ts.margin)/(ts.tile_width + ts.spacing);
-                    let rect = graphics::Rect::new(
-                        (ts.margin + ((gid - ts.first_gid) % columns) * (ts.tile_width + ts.spacing)) as f32/image.width as f32,
-                        (ts.margin + ((gid - ts.first_gid) / columns) * (ts.tile_height + ts.spacing)) as f32/image.height as f32,
-                        ts.tile_width as f32/image.width as f32,
-                        ts.tile_height as f32/image.height as f32,
-                    );
-                    if self.image_cache.contains_key(&image.source) {
-                        return Some((rect, self.image_cache.get(&image.source).unwrap()));
-                    } else {
-                        let mut path = "/".to_string();
-                        path.push_str(&image.source);
-                        let image = self.image_cache.entry(image.source.to_string()).or_insert(graphics::Image::new(ctx, &path).unwrap());
-                        return Some((rect, image));
-                    }
-                }
-            }
-        }
-        None
-    }
 }

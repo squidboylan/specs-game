@@ -9,6 +9,7 @@ use specs::prelude::*;
 use std::mem;
 
 pub mod input;
+pub mod map;
 
 struct GameState {
     pub world: World,
@@ -62,6 +63,7 @@ impl<'a, 'b> Game<'a, 'b> {
         let color = RectColor::new(255, 0, 0, 255);
         let cursor_color = RectColor::new(255, 255, 255, 255);
         let level_data = tiled::parse(ggez::filesystem::open(ctx, "/map1.tmx").unwrap()).unwrap();
+        let map = map::Map::new(ctx, &level_data);
 
         menu_world
             .create_entity()
@@ -80,7 +82,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(OnClick {
                 f: Box::new(move || {
                     let mut world = GameState::initialized_world();
-                    world.insert(level_data.clone());
+                    world.insert(map.clone());
 
                     let player_rect = Rect::new(0.0, 0.0, 25.0, 25.0);
                     let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
