@@ -123,27 +123,3 @@ impl<'a> System<'a> for InputHandler {
         }
     }
 }
-
-pub struct Creator {
-    y: f32,
-}
-
-impl Creator {
-    pub fn new(y: f32) -> Self {
-        Creator { y }
-    }
-}
-
-impl<'a> System<'a> for Creator {
-    type SystemData = (Entities<'a>, Read<'a, LazyUpdate>);
-
-    fn run(&mut self, (entities, lazy): Self::SystemData) {
-        let i = entities.create();
-        let r = Rect::new(0.0, self.y, 10.0, 10.0);
-        let c = RectColor::new(0, self.y as u8, 0, 255);
-        lazy.insert(i, r);
-        lazy.insert(i, c);
-        lazy.insert(i, Vel { x: 2.0, y: 0.0 });
-        self.y += 1.0;
-    }
-}

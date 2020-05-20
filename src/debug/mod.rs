@@ -42,7 +42,6 @@ impl<'a, 'b> Debug<'a, 'b> {
             .with(FPS)
             .with(Text {
                 text: String::new(),
-                scale: ggez::graphics::Scale::uniform(50.0),
             })
             .with(Rect::new(
                 SCREEN_WIDTH - width,
@@ -50,7 +49,7 @@ impl<'a, 'b> Debug<'a, 'b> {
                 width,
                 height,
             ))
-            .with(RectColor::new(0, 0, 255, 255))
+            .with(RectColor::new(0.0, 0.0, 1.0, 1.0))
             .build();
 
         let dispatcher = DispatcherBuilder::new()

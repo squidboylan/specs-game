@@ -13,7 +13,6 @@ impl Component for FPS {
 
 pub struct Text {
     pub text: String,
-    pub scale: ggez::graphics::Scale,
 }
 
 impl Component for Text {
@@ -56,58 +55,47 @@ impl DerefMut for Rotation {
 }
 
 #[derive(Clone)]
-pub struct Rect(pub ggez::graphics::Rect);
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
 
 impl Component for Rect {
     type Storage = VecStorage<Self>;
 }
 
 impl Rect {
-    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Rect(ggez::graphics::Rect::new(x, y, width, height))
+    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+        Self { x, y, w, h }
     }
 
     pub fn get_center(&self) -> (f32, f32) {
-        (self.x + self.w/2.0, self.y + self.h/2.0)
-    }
-}
-
-impl Deref for Rect {
-    type Target = ggez::graphics::Rect;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Rect {
-    fn deref_mut(&mut self) -> &mut ggez::graphics::Rect {
-        &mut self.0
+        (self.w/2.0 + self.x, self.h/2.0 + self.y)
     }
 }
 
 #[derive(Clone)]
-pub struct RectColor(pub ggez::graphics::Color);
+pub struct RectColor {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32
+}
 
 impl Component for RectColor {
     type Storage = VecStorage<Self>;
 }
 
 impl RectColor {
-    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
-        RectColor(ggez::graphics::Color::from_rgba(r, g, b, a))
-    }
-}
-
-impl Deref for RectColor {
-    type Target = ggez::graphics::Color;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for RectColor {
-    fn deref_mut(&mut self) -> &mut ggez::graphics::Color {
-        &mut self.0
+    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self {
+            r,
+            g,
+            b,
+            a
+        }
     }
 }
 

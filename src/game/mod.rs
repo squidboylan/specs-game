@@ -2,9 +2,10 @@ use crate::components::*;
 use crate::debug;
 use crate::renderer;
 use crate::systems::*;
-use ggez::event::KeyCode;
-use ggez::event::MouseButton;
-use ggez::{self, *};
+use glutin::event::{Event, WindowEvent};
+use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::event::VirtualKeyCode;
+use glutin::WindowedContext;
 use specs::prelude::*;
 use std::mem;
 
@@ -51,7 +52,7 @@ pub struct Game<'a, 'b> {
 }
 
 impl<'a, 'b> Game<'a, 'b> {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub fn new() -> Self {
         let mut menu_world = GameState::initialized_world();
         let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
         let rect = Rect::new(
@@ -60,10 +61,10 @@ impl<'a, 'b> Game<'a, 'b> {
             100.0,
             50.0,
         );
-        let color = RectColor::new(255, 0, 0, 255);
-        let cursor_color = RectColor::new(255, 255, 255, 255);
-        let level_data = tiled::parse(ggez::filesystem::open(ctx, "/map1.tmx").unwrap()).unwrap();
-        let map = map::Map::new(ctx, &level_data);
+        let color = RectColor::new(1.0, 0.0, 0.0, 1.0);
+        let cursor_color = RectColor::new(1.0, 1.0, 1.0, 1.0);
+        let level_data = tiled::parse_file(std::path::Path::new("resources/map1.tmx")).unwrap();
+        let map = map::Map::new(&level_data);
 
         menu_world
             .create_entity()
@@ -77,7 +78,6 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(color)
             .with(Text {
                 text: "Level 1".to_string(),
-                scale: graphics::Scale::uniform(25.0),
             })
             .with(OnClick {
                 f: Box::new(move || {
@@ -86,8 +86,8 @@ impl<'a, 'b> Game<'a, 'b> {
 
                     let player_rect = Rect::new(0.0, 0.0, 25.0, 25.0);
                     let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
-                    let color = RectColor::new(255, 0, 0, 255);
-                    let cursor_color = RectColor::new(255, 255, 255, 255);
+                    let color = RectColor::new(1.0, 0.0, 0.0, 1.0);
+                    let cursor_color = RectColor::new(1.0, 1.0, 1.0, 1.0);
 
                     world
                         .create_entity()
@@ -121,15 +121,15 @@ impl<'a, 'b> Game<'a, 'b> {
             })
             .with(Hover::new(
                 Box::new(|c| {
-                    c.0.r = 255.0;
-                    c.0.g = 255.0;
-                    c.0.b = 255.0;
+                    c.r = 1.0;
+                    c.g = 1.0;
+                    c.b = 1.0;
                     None
                 }),
                 Box::new(|c| {
-                    c.0.r = 255.0;
-                    c.0.g = 0.0;
-                    c.0.b = 0.0;
+                    c.r = 1.0;
+                    c.g = 0.0;
+                    c.b = 0.0;
                     None
                 }),
             ))
@@ -141,7 +141,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .build();
         let debug = debug::Debug::new(&mut menu_world);
         let menu = GameState::new(menu_world);
-        let renderer = renderer::Renderer::new(ctx);
+        let renderer = renderer::Renderer::new();
         let mut state_stack: Vec<Box<GameState>> = Vec::new();
         state_stack.push(Box::new(menu));
 
@@ -152,15 +152,9 @@ impl<'a, 'b> Game<'a, 'b> {
             dispatcher,
         }
     }
-}
 
-impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+    pub fn update(&mut self) {
         let transition = {
-            if self.state_stack.is_empty() {
-                ggez::event::quit(ctx);
-                return Ok(());
-            }
             let curr_state = self.state_stack.last_mut().unwrap();
             let t = {
                 if curr_state.world.fetch_mut::<Option<StateTransition>>().is_none() {
@@ -187,89 +181,64 @@ impl<'a, 'b> event::EventHandler for Game<'a, 'b> {
             }
             None => (),
         };
-        Ok(())
     }
 
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        if self.state_stack.is_empty() {
-            ggez::event::quit(ctx);
-            return Ok(());
-        }
+    pub fn draw(&mut self, ctx: &mut WindowedContext<glutin::PossiblyCurrent>) {
         let curr_state = self.state_stack.last_mut().unwrap();
         self.renderer.run(ctx, &mut curr_state.world);
-        Ok(())
     }
 
-    fn key_down_event(
+    pub fn key_event(
         &mut self,
-        ctx: &mut Context,
-        keycode: event::KeyCode,
-        _keymod: event::KeyMods,
-        _repeat: bool,
+        key_input: glutin::event::KeyboardInput,
     ) {
-        if self.state_stack.is_empty() {
-            ggez::event::quit(ctx);
-        }
         let curr_state = self.state_stack.last_mut().unwrap();
-        match keycode {
-            KeyCode::W => curr_state.world.fetch_mut::<input::Input>().keyboard.w = true,
-            KeyCode::A => curr_state.world.fetch_mut::<input::Input>().keyboard.a = true,
-            KeyCode::S => curr_state.world.fetch_mut::<input::Input>().keyboard.s = true,
-            KeyCode::D => curr_state.world.fetch_mut::<input::Input>().keyboard.d = true,
-            KeyCode::Escape => {
-                *curr_state.world.fetch_mut::<Option<StateTransition>>() =
-                    Some(StateTransition::Pop)
-            }
-            _ => println!("Pressed: {:?}", keycode),
-        };
+        let key_state = key_input.state;
+        if key_state == glutin::event::ElementState::Pressed {
+            match key_input.virtual_keycode {
+                Some(VirtualKeyCode::W) => curr_state.world.fetch_mut::<input::Input>().keyboard.w = true,
+                Some(VirtualKeyCode::A) => curr_state.world.fetch_mut::<input::Input>().keyboard.a = true,
+                Some(VirtualKeyCode::S) => curr_state.world.fetch_mut::<input::Input>().keyboard.s = true,
+                Some(VirtualKeyCode::D) => curr_state.world.fetch_mut::<input::Input>().keyboard.d = true,
+                Some(VirtualKeyCode::Escape) => {
+                    *curr_state.world.fetch_mut::<Option<StateTransition>>() =
+                        Some(StateTransition::Pop)
+                }
+                _ => println!("Pressed: {:?}", key_input.virtual_keycode),
+            };
+        } else {
+            match key_input.virtual_keycode {
+                Some(VirtualKeyCode::W) => curr_state.world.fetch_mut::<input::Input>().keyboard.w = false,
+                Some(VirtualKeyCode::A) => curr_state.world.fetch_mut::<input::Input>().keyboard.a = false,
+                Some(VirtualKeyCode::S) => curr_state.world.fetch_mut::<input::Input>().keyboard.s = false,
+                Some(VirtualKeyCode::D) => curr_state.world.fetch_mut::<input::Input>().keyboard.d = false,
+                _ => println!("Released: {:?}", key_input.virtual_keycode),
+            };
+        }
     }
 
-    fn key_up_event(
+    pub fn mouse_movement (
         &mut self,
-        ctx: &mut Context,
-        keycode: event::KeyCode,
-        _keymod: event::KeyMods,
+        pos: glutin::dpi::PhysicalPosition<f64>,
     ) {
-        if self.state_stack.is_empty() {
-            ggez::event::quit(ctx);
-            return;
-        }
         let curr_state = self.state_stack.last_mut().unwrap();
-        match keycode {
-            KeyCode::W => curr_state.world.fetch_mut::<input::Input>().keyboard.w = false,
-            KeyCode::A => curr_state.world.fetch_mut::<input::Input>().keyboard.a = false,
-            KeyCode::S => curr_state.world.fetch_mut::<input::Input>().keyboard.s = false,
-            KeyCode::D => curr_state.world.fetch_mut::<input::Input>().keyboard.d = false,
-            _ => println!("Released: {:?}", keycode),
-        };
+        curr_state.world.fetch_mut::<input::Input>().mouse.x = pos.x as f32;
+        curr_state.world.fetch_mut::<input::Input>().mouse.x = pos.y as f32;
+
+        println!("{:?}", pos);
     }
 
-    fn mouse_motion_event(&mut self, ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        if self.state_stack.is_empty() {
-            ggez::event::quit(ctx);
-            return;
-        }
-        let curr_state = self.state_stack.last_mut().unwrap();
-        let mut input = curr_state.world.fetch_mut::<input::Input>();
-        input.mouse.x = x;
-        input.mouse.y = y;
-    }
-
-    fn mouse_button_down_event(
+    pub fn mouse_button_down_event(
         &mut self,
-        ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
+        button: glutin::event::MouseButton,
+        state: glutin::event::ElementState,
     ) {
-        if self.state_stack.is_empty() {
-            ggez::event::quit(ctx);
-            return;
-        }
         let curr_state = self.state_stack.last_mut().unwrap();
-        match button {
-            MouseButton::Left => curr_state.world.fetch_mut::<input::Input>().mouse.left_tap = true,
-            _ => println!("Mouse Button Pressed: {:?}", button),
-        };
+        if state == glutin::event::ElementState::Pressed {
+            match button {
+                glutin::event::MouseButton::Left => curr_state.world.fetch_mut::<input::Input>().mouse.left_tap = true,
+                _ => println!("Mouse Button Pressed: {:?}", button),
+            };
+        }
     }
 }
