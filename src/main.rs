@@ -70,9 +70,11 @@ fn main() {
                     }
                     _ => (),
                 },
-                Event::RedrawRequested(_) => {
-                    println!("Drawing");
+                Event::MainEventsCleared => {
                     game.update();
+                    windowed_context.window().request_redraw();
+                },
+                Event::RedrawRequested(_) => {
                     unsafe {
                         gl::ClearColor(0.3, 0.3, 0.3, 1.0);
                         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

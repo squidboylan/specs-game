@@ -63,8 +63,8 @@ impl<'a, 'b> Game<'a, 'b> {
         );
         let color = RectColor::new(1.0, 0.0, 0.0, 1.0);
         let cursor_color = RectColor::new(1.0, 1.0, 1.0, 1.0);
-        let level_data = tiled::parse_file(std::path::Path::new("resources/map1.tmx")).unwrap();
-        let map = map::Map::new(&level_data);
+        let level_data = tiled::parse_file(std::path::Path::new("./resources/map1.tmx")).unwrap();
+        let map = map::Map::from_tiled(&level_data).unwrap();
 
         menu_world
             .create_entity()
@@ -223,7 +223,7 @@ impl<'a, 'b> Game<'a, 'b> {
     ) {
         let curr_state = self.state_stack.last_mut().unwrap();
         curr_state.world.fetch_mut::<input::Input>().mouse.x = pos.x as f32;
-        curr_state.world.fetch_mut::<input::Input>().mouse.x = pos.y as f32;
+        curr_state.world.fetch_mut::<input::Input>().mouse.y = pos.y as f32;
 
         println!("{:?}", pos);
     }

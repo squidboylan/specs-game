@@ -54,7 +54,7 @@ impl DerefMut for Rotation {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,
