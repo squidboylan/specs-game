@@ -9,6 +9,7 @@ use gl::types::*;
 
 use std::path;
 use std::env;
+use std::time::Instant;
 
 mod components;
 mod debug;
@@ -41,6 +42,7 @@ fn main() {
 
     let mut window_open = true;
 
+    let mut start = Instant::now();
     while window_open {
         event_loop.run(move |event, _, control_flow| {
             match event {
@@ -81,6 +83,10 @@ fn main() {
                     }
                     game.draw(&mut windowed_context);
                     windowed_context.swap_buffers().unwrap();
+                    let elapsed = start.elapsed();
+                    //println!("millis: {} ms", elapsed.as_millis());
+                    //println!("Micros: {} ms", elapsed.as_micros());
+                    start = Instant::now();
                 }
                 _ => (),
             }

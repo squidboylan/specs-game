@@ -11,6 +11,7 @@ pub const SCREEN_WIDTH: f32 = 1920.0;
 pub const SCREEN_HEIGHT: f32 = 1080.0;
 
 mod shader;
+mod font;
 
 type Texture = GLuint;
 type Vbo = GLuint;
@@ -44,6 +45,7 @@ struct TextureRect {
 pub struct Renderer {
     rect_shader: shader::Program,
     texture_shader: shader::Program,
+    text_shader: shader::Program,
     mesh_vbo: Vbo,
     rects_vao: Vao,
     rects_vbo: Vbo,
@@ -51,12 +53,16 @@ pub struct Renderer {
     texture_rects_vbo: Vbo,
     texture_rects_data: Vec<TextureRect>,
     texture_handles: HashMap<String, Texture>,
+    text_rects_vao: Vao,
+    text_rects_vbo: Vbo,
+    font: font::Font,
 }
 
 impl<'b> Renderer {
     pub fn new() -> Self {
-        let mut rect_shader = shader::Program::new(&include_str!("rect_color.vert"), &include_str!("rect_color.frag"));
-        let mut texture_shader = shader::Program::new(&include_str!("texture.vert"), &include_str!("texture.frag"));
+        let mut rect_shader = shader::Program::new(&include_str!("shaders/rect_color.vert"), &include_str!("shaders/rect_color.frag"));
+        let mut texture_shader = shader::Program::new(&include_str!("shaders/texture.vert"), &include_str!("shaders/texture.frag"));
+        let mut text_shader = shader::Program::new(&include_str!("shaders/text.vert"), &include_str!("shaders/text.frag"));
 
         let texture_handles = HashMap::new();
 
@@ -81,6 +87,9 @@ impl<'b> Renderer {
         let mut mesh_vbo = 0;
         let mut rects_vao = 0;
         let mut rects_vbo = 0;
+
+        let mut text_rects_vao = 0;
+        let mut text_rects_vbo = 0;
         unsafe {
             // We probably dont need these things, at least not for now, but i'll keep the stuff
             // here and commented out just in case.
@@ -98,7 +107,7 @@ impl<'b> Renderer {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             gl::Enable( gl::BLEND );
 
-            // Setup our particle data in the GPU
+            // Setup our rect data in the GPU
             gl::GenVertexArrays(1, &mut rects_vao);
             gl::GenBuffers(1, &mut mesh_vbo);
             gl::GenBuffers(1, &mut rects_vbo);
@@ -137,18 +146,43 @@ impl<'b> Renderer {
             gl::VertexAttribDivisor(3, 1);
             gl::VertexAttribDivisor(4, 1);
             gl::BindVertexArray(0);
+
+            // Setup our text data in the GPU
+            gl::GenVertexArrays(1, &mut text_rects_vao);
+            gl::GenBuffers(1, &mut text_rects_vbo);
+
+            gl::BindVertexArray(text_rects_vao);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, mesh_vbo);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0 as i32, 0 as *const GLvoid);
+            gl::EnableVertexAttribArray(0);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, text_rects_vbo);
+
+            gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, 4 * mem::size_of::<f32>() as i32, 0 as *const GLvoid);
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribDivisor(0, 0);
+            gl::VertexAttribDivisor(1, 1);
+            gl::BindVertexArray(0);
+
         }
+
+        let font = font::Font::new(std::path::Path::new("resources/OpenSans-Regular.ttf"));
 
         Renderer {
             rect_shader,
             texture_shader,
+            text_shader,
             mesh_vbo,
             rects_vao,
             rects_vbo,
             texture_rects_vao: 0,
             texture_rects_vbo: 0,
             texture_handles,
-            texture_rects_data
+            texture_rects_data,
+            text_rects_vao,
+            text_rects_vbo,
+            font,
         }
     }
 
@@ -156,12 +190,13 @@ impl<'b> Renderer {
         self.draw_background(ctx, world);
         let mut rects_data = Vec::new();
         world.exec(
-            |(rect, rect_color, _text, rotation): (
+            |(rect, rect_color, text, rotation): (
                 ReadStorage<'b, Rect>,
                 ReadStorage<'b, RectColor>,
                 ReadStorage<'b, Text>,
                 ReadStorage<'b, Rotation>,
             )| {
+                // Render our color rects
                 self.rect_shader.enable();
 
                 for (r, c, rot) in (&rect, &rect_color, rotation.maybe()).join() {
@@ -186,22 +221,91 @@ impl<'b> Renderer {
                         mem::transmute(&rects_data[0]),
                         gl::STREAM_DRAW,
                     );
+                    gl::MemoryBarrier(gl::SHADER_STORAGE_BARRIER_BIT | gl::VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+                    gl::BindVertexArray(self.rects_vao);
+                    gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, rects_data.len() as i32);
+                    gl::BindVertexArray(0);
+                }
+
+                // Render text
+                self.text_shader.enable();
+
+                unsafe {
+                    gl::BindVertexArray(self.text_rects_vao);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, self.text_rects_vbo);
+                    gl::Uniform3f(gl::GetUniformLocation(self.text_shader.program, "color".as_ptr() as *const GLchar), 1.0, 0.0, 0.0);
+                    for (r, t) in (&rect, &text).join() {
+                        for character in t.text.as_bytes() {
+                            gl::BindTexture(gl::TEXTURE_2D, self.font.font_textures[*character as usize]);
+                            let center = r.get_center();
+                            let loc = [center.0, center.1, 0.0, 1.0];
+                            gl::BufferData(
+                                gl::ARRAY_BUFFER,
+                                (loc.len() * mem::size_of::<f32>()) as GLsizeiptr,
+                                mem::transmute(&loc[0]),
+                                gl::STREAM_DRAW,
+                            );
+                            gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, 1 as i32);
+                        }
+                    }
+                    gl::BindVertexArray(0);
+                    gl::BindTexture(gl::TEXTURE_2D, 0);
                 }
             },
         );
-        unsafe {
-            gl::MemoryBarrier(gl::SHADER_STORAGE_BARRIER_BIT | gl::VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
-
-            gl::BindVertexArray(self.rects_vao);
-            gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, rects_data.len() as i32);
-            gl::BindVertexArray(0);
-        }
     }
 
     pub fn prepare_map(&mut self, world: &'b mut World) {
         let map = world.fetch_mut::<crate::game::map::Map>();
+        if self.texture_rects_data.len() == 0 {
+            let image = image::open(&map.image).unwrap().to_rgba();
+            unsafe {
+                gl::GenVertexArrays(1, &mut self.texture_rects_vao);
+                gl::GenBuffers(1, &mut self.texture_rects_vbo);
 
-        let image = image::open(&map.image).unwrap().to_rgba();
+                gl::BindVertexArray(self.texture_rects_vao);
+
+                gl::BindBuffer(gl::ARRAY_BUFFER, self.mesh_vbo);
+                gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0 as i32, 0 as *const GLvoid);
+                gl::EnableVertexAttribArray(0);
+
+                gl::BindBuffer(gl::ARRAY_BUFFER, self.texture_rects_vbo);
+
+                gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (0 * mem::size_of::<f32>()) as *const GLvoid);
+                gl::EnableVertexAttribArray(1);
+                gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (4 * mem::size_of::<f32>()) as *const GLvoid);
+                gl::EnableVertexAttribArray(2);
+                gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (8 * mem::size_of::<f32>()) as *const GLvoid);
+                gl::EnableVertexAttribArray(3);
+                gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (11 * mem::size_of::<f32>()) as *const GLvoid);
+                gl::EnableVertexAttribArray(4);
+                gl::VertexAttribPointer(5, 2, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (12 * mem::size_of::<f32>()) as *const GLvoid);
+                gl::EnableVertexAttribArray(5);
+                gl::VertexAttribDivisor(0, 0);
+                gl::VertexAttribDivisor(1, 1);
+                gl::VertexAttribDivisor(2, 1);
+                gl::VertexAttribDivisor(3, 1);
+                gl::VertexAttribDivisor(4, 1);
+                gl::VertexAttribDivisor(5, 1);
+                gl::BindVertexArray(0);
+
+                // Setup our texture stuff
+                let mut texture = 0;
+                gl::GenTextures(1, &mut texture);
+                gl::BindTexture(gl::TEXTURE_2D, texture);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
+                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
+                println!("foo");
+                gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as GLint, image.width() as GLsizei, image.height() as GLsizei,
+                    0, gl::RGBA, gl::UNSIGNED_BYTE, image.into_raw().as_ptr() as *const GLvoid);
+
+                self.texture_handles.insert(map.image.clone(), texture);
+            }
+        }
+        self.texture_rects_data.clear();
 
         for layer in &map.layers {
             for tile in &layer.map_tiles {
@@ -225,15 +329,7 @@ impl<'b> Renderer {
         }
 
         unsafe {
-            gl::GenVertexArrays(1, &mut self.texture_rects_vao);
-            gl::GenBuffers(1, &mut self.texture_rects_vbo);
-
             gl::BindVertexArray(self.texture_rects_vao);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.mesh_vbo);
-            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0 as i32, 0 as *const GLvoid);
-            gl::EnableVertexAttribArray(0);
-
             gl::BindBuffer(gl::ARRAY_BUFFER, self.texture_rects_vbo);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
@@ -241,38 +337,7 @@ impl<'b> Renderer {
                 mem::transmute(&self.texture_rects_data[0]),
                 gl::STREAM_DRAW,
             );
-
-            gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (0 * mem::size_of::<f32>()) as *const GLvoid);
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (4 * mem::size_of::<f32>()) as *const GLvoid);
-            gl::EnableVertexAttribArray(2);
-            gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (8 * mem::size_of::<f32>()) as *const GLvoid);
-            gl::EnableVertexAttribArray(3);
-            gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (11 * mem::size_of::<f32>()) as *const GLvoid);
-            gl::EnableVertexAttribArray(4);
-            gl::VertexAttribPointer(5, 2, gl::FLOAT, gl::FALSE, mem::size_of::<TextureRect>() as i32, (12 * mem::size_of::<f32>()) as *const GLvoid);
-            gl::EnableVertexAttribArray(5);
-            gl::VertexAttribDivisor(0, 0);
-            gl::VertexAttribDivisor(1, 1);
-            gl::VertexAttribDivisor(2, 1);
-            gl::VertexAttribDivisor(3, 1);
-            gl::VertexAttribDivisor(4, 1);
-            gl::VertexAttribDivisor(5, 1);
             gl::BindVertexArray(0);
-
-            // Setup our texture stuff
-            let mut texture = 0;
-            gl::GenTextures(1, &mut texture);
-            gl::BindTexture(gl::TEXTURE_2D, texture);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-            println!("foo");
-            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as GLint, image.width() as GLsizei, image.height() as GLsizei,
-                0, gl::RGBA, gl::UNSIGNED_BYTE, image.into_raw().as_ptr() as *const GLvoid);
-
-            self.texture_handles.insert(map.image.clone(), texture);
         }
     }
 
@@ -281,13 +346,16 @@ impl<'b> Renderer {
             return;
         }
         let image = world.fetch::<crate::game::map::Map>().image.clone();
+        /*
         let mut texture = self.texture_handles.get(&image);
         if texture.is_none() {
             self.prepare_map(world);
         }
+        (*/
+        self.prepare_map(world);
         let map = world.try_fetch_mut::<crate::game::map::Map>().unwrap();
         let mut texture = self.texture_handles.get(&map.image).unwrap();
-        println!("drawing {} tiles", self.texture_rects_data.len());
+        //println!("drawing {} tiles", self.texture_rects_data.len());
         self.texture_shader.enable();
         unsafe {
             gl::MemoryBarrier(gl::SHADER_STORAGE_BARRIER_BIT | gl::VERTEX_ATTRIB_ARRAY_BARRIER_BIT);

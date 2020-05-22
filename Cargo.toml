@@ -12,6 +12,7 @@ tiled = "0.9"
 glutin = "0.24"
 gl = "0.14"
 image = "0.20"
+freetype-rs = "0.25"
 
 [dependencies.specs]
 version = '0.16'

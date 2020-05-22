@@ -93,7 +93,7 @@ impl<'a> System<'a> for InputHandler {
             r.y = data.input.mouse.y - r.h / 2.0;
         }
 
-        let velocity = 2.0;
+        let velocity = 5.0;
 
         for (v, _) in (&mut data.vel, &data.player).join() {
             if data.input.keyboard.w {

@@ -9,7 +9,7 @@ use std::time;
 use std::error::Error;
 
 pub struct Program {
-    program: GLuint,
+    pub program: GLuint,
 }
 
 impl Program {

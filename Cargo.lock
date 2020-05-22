@@ -137,6 +137,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e56268c17a6248366d66d4a47a3381369d068cce8409bb1716ed77ea32163bb"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,6 +388,28 @@ name = "foreign-types-shared"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+
+[[package]]
+name = "freetype-rs"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e687cf953d7052be94742baf3fc63b1ea21ada7d9b45f7b1918221accebf1ae"
+dependencies = [
+ "bitflags",
+ "freetype-sys",
+ "libc",
+]
+
+[[package]]
+name = "freetype-sys"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7530337a8e76db5271f1b5f81dd5340b0adaea235cb089cefa1928bd0cb9ee71"
+dependencies = [
+ "cmake",
+ "libc",
+ "pkg-config",
+]
 
 [[package]]
 name = "fuchsia-zircon"
@@ -1242,6 +1273,7 @@ dependencies = [
 name = "specs-game"
 version = "0.1.0"
 dependencies = [
+ "freetype-rs",
  "gl",
  "glutin",
  "image",
