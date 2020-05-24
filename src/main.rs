@@ -28,7 +28,7 @@ fn main() {
     let context = ContextBuilder::new()
         .with_vsync(true)
         .with_gl(GlRequest::Specific(Api::OpenGl, (4, 3)))
-        .with_multisampling(0)
+        .with_multisampling(8)
         .build_windowed(window, &event_loop)
         .unwrap();
 

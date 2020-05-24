@@ -13,6 +13,8 @@ impl Component for FPS {
 
 pub struct Text {
     pub text: String,
+    pub scale: f32,
+    pub location: (f32, f32),
 }
 
 impl Component for Text {

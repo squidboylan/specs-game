@@ -190,10 +190,9 @@ impl<'b> Renderer {
         self.draw_background(ctx, world);
         let mut rects_data = Vec::new();
         world.exec(
-            |(rect, rect_color, text, rotation): (
+            |(rect, rect_color, rotation): (
                 ReadStorage<'b, Rect>,
                 ReadStorage<'b, RectColor>,
-                ReadStorage<'b, Text>,
                 ReadStorage<'b, Rotation>,
             )| {
                 // Render our color rects
@@ -227,7 +226,17 @@ impl<'b> Renderer {
                     gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, rects_data.len() as i32);
                     gl::BindVertexArray(0);
                 }
+            },
+        );
+        self.draw_text(ctx, world);
+    }
 
+    pub fn draw_text(&mut self, ctx: &mut WindowedContext<glutin::PossiblyCurrent>, world: &'b mut World) {
+        world.exec(
+            |(rect, text): (
+                ReadStorage<'b, Rect>,
+                ReadStorage<'b, Text>,
+            )| {
                 // Render text
                 self.text_shader.enable();
 

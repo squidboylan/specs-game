@@ -8,7 +8,7 @@ type Vao = GLuint;
 
 pub struct Font {
     pub font_textures: [Texture; 128],
-    pub bitmaps: Vec<freetype::bitmap::Bitmap>,
+    pub glyphs: Vec<freetype::glyph_slot::GlyphSlot>,
 }
 
 impl Font {
@@ -16,12 +16,12 @@ impl Font {
         let mut font_textures = [0; 128];
         let lib = library::Library::init().unwrap();
         let face = lib.new_face(p, 0).unwrap();
-        let mut bitmaps = Vec::new();
+        let mut glyphs = Vec::new();
 
         face.set_char_size(40 * 64, 0, 50, 0).unwrap();
         for i in 0..128 {
             face.load_char(i, freetype::face::LoadFlag::RENDER).unwrap();
-            let glyph = face.glyph();
+            let glyph = face.glyph().clone();
             let bitmap = glyph.bitmap();
             println!("{}: width: {}, rows: {}, buffer_size: {}, mode: {:?}", i, bitmap.width(), bitmap.rows(), bitmap.buffer().len(), bitmap.pixel_mode().unwrap());
 
@@ -37,12 +37,12 @@ impl Font {
                 gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RED as GLint, bitmap.width() as GLsizei, bitmap.rows() as GLsizei,
                     0, gl::RED, gl::UNSIGNED_BYTE, bitmap.buffer().as_ptr() as *const GLvoid);
             }
-            bitmaps.push(bitmap);
+            glyphs.push(glyph);
             font_textures[i] = texture;
         }
         Font {
             font_textures,
-            bitmaps,
+            glyphs,
         }
     }
 }

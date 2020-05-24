@@ -42,6 +42,8 @@ impl<'a, 'b> Debug<'a, 'b> {
             .with(FPS)
             .with(Text {
                 text: String::new(),
+                location: (SCREEN_WIDTH - width, SCREEN_HEIGHT - height),
+                scale: 1.0,
             })
             .with(Rect::new(
                 SCREEN_WIDTH - width,
