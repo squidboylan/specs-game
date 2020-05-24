@@ -39,7 +39,7 @@ struct TextureRect {
     size: (f32, f32, f32),
     rotation: f32,
     tile_dimensions: (f32, f32),
-    pad: [f32; 2],
+    pad: (f32, f32),
 }
 
 pub struct Renderer {
@@ -56,6 +56,13 @@ pub struct Renderer {
     text_rects_vao: Vao,
     text_rects_vbo: Vbo,
     font: font::Font,
+}
+
+#[repr(C)]
+struct Character {
+    location: (f32, f32, f32, f32),
+    dimensions: (f32, f32),
+    pad: (f32, f32),
 }
 
 impl<'b> Renderer {
@@ -159,10 +166,13 @@ impl<'b> Renderer {
 
             gl::BindBuffer(gl::ARRAY_BUFFER, text_rects_vbo);
 
-            gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, 4 * mem::size_of::<f32>() as i32, 0 as *const GLvoid);
+            gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, mem::size_of::<Character>() as i32, 0 as *const GLvoid);
             gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(2, 2, gl::FLOAT, gl::FALSE, mem::size_of::<Character>() as i32, (4 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(2);
             gl::VertexAttribDivisor(0, 0);
             gl::VertexAttribDivisor(1, 1);
+            gl::VertexAttribDivisor(2, 1);
             gl::BindVertexArray(0);
 
         }
@@ -240,22 +250,36 @@ impl<'b> Renderer {
                 // Render text
                 self.text_shader.enable();
 
+
                 unsafe {
                     gl::BindVertexArray(self.text_rects_vao);
                     gl::BindBuffer(gl::ARRAY_BUFFER, self.text_rects_vbo);
                     gl::Uniform3f(gl::GetUniformLocation(self.text_shader.program, "color".as_ptr() as *const GLchar), 1.0, 0.0, 0.0);
                     for (r, t) in (&rect, &text).join() {
+                        let mut curr_x = t.location.0;
+                        let mut curr_y = t.location.1;
                         for character in t.text.as_bytes() {
+                            let glyph = &self.font.glyphs[*character as usize];
+                            let bitmap = &self.font.bitmaps[*character as usize];
                             gl::BindTexture(gl::TEXTURE_2D, self.font.font_textures[*character as usize]);
-                            let center = r.get_center();
-                            let loc = [center.0, center.1, 0.0, 1.0];
+                            let x = curr_x + glyph.bitmap_left() as f32;
+                            let y = curr_y + 24.0 - glyph.bitmap_top() as f32;
+                            let loc = (x, y, 1.0, 1.0);
+                            let tmp = [Character {
+                                location: loc,
+                                dimensions: (bitmap.width() as f32, bitmap.rows() as f32),
+                                pad: (0.0, 0.0)
+                            }];
                             gl::BufferData(
                                 gl::ARRAY_BUFFER,
-                                (loc.len() * mem::size_of::<f32>()) as GLsizeiptr,
-                                mem::transmute(&loc[0]),
+                                (tmp.len() * mem::size_of::<Character>()) as GLsizeiptr,
+                                mem::transmute(&tmp[0]),
                                 gl::STREAM_DRAW,
                             );
                             gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, 1 as i32);
+                            let a = glyph.advance();
+                            curr_x += a.x as f32 / 64.0;
+                            curr_y += a.y as f32 / 64.0;
                         }
                     }
                     gl::BindVertexArray(0);
@@ -331,7 +355,7 @@ impl<'b> Renderer {
                         size: (32.0, 32.0, 0.0),
                         rotation: 0.0,
                         tile_dimensions: (image_tile.w as f32, image_tile.h as f32),
-                        pad: [0.0, 0.0],
+                        pad: (0.0, 0.0),
                     }
                 );
             }

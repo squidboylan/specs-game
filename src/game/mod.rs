@@ -77,7 +77,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(rect)
             .with(color)
             .with(Text {
-                text: ",".to_string(),
+                text: "Level".to_string(),
                 scale: 1.0,
                 location: (rect.x, rect.y),
             })
