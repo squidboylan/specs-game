@@ -59,6 +59,7 @@ pub struct Renderer {
 }
 
 #[repr(C)]
+#[derive(Debug)]
 struct Character {
     location: (f32, f32, f32, f32),
     dimensions: (f32, f32),
@@ -250,36 +251,35 @@ impl<'b> Renderer {
                 // Render text
                 self.text_shader.enable();
 
-
                 unsafe {
                     gl::BindVertexArray(self.text_rects_vao);
                     gl::BindBuffer(gl::ARRAY_BUFFER, self.text_rects_vbo);
-                    gl::Uniform3f(gl::GetUniformLocation(self.text_shader.program, "color".as_ptr() as *const GLchar), 1.0, 0.0, 0.0);
+                    //gl::Uniform3f(gl::GetUniformLocation(self.text_shader.program, "color".as_ptr() as *const GLchar), 1.0, 0.0, 0.0);
                     for (r, t) in (&rect, &text).join() {
                         let mut curr_x = t.location.0;
                         let mut curr_y = t.location.1;
                         for character in t.text.as_bytes() {
-                            let glyph = &self.font.glyphs[*character as usize];
-                            let bitmap = &self.font.bitmaps[*character as usize];
-                            gl::BindTexture(gl::TEXTURE_2D, self.font.font_textures[*character as usize]);
-                            let x = curr_x + glyph.bitmap_left() as f32;
-                            let y = curr_y + 24.0 - glyph.bitmap_top() as f32;
+                            let glyph = self.font.glyphs[*character as usize];
+                            gl::BindTexture(gl::TEXTURE_2D, glyph.texture);
+                            //println!("left: {}, top: {}, width: {}, rows {}", left, top, w, h);
+                            let x = curr_x + glyph.left + glyph.w/2.0;
+                            let y = curr_y - glyph.top + glyph.h/2.0;
                             let loc = (x, y, 1.0, 1.0);
                             let tmp = [Character {
                                 location: loc,
-                                dimensions: (bitmap.width() as f32, bitmap.rows() as f32),
+                                dimensions: (glyph.w, glyph.h),
                                 pad: (0.0, 0.0)
                             }];
+                            //println!("Drawing: {:?}", tmp);
                             gl::BufferData(
                                 gl::ARRAY_BUFFER,
                                 (tmp.len() * mem::size_of::<Character>()) as GLsizeiptr,
                                 mem::transmute(&tmp[0]),
                                 gl::STREAM_DRAW,
                             );
-                            gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, 1 as i32);
-                            let a = glyph.advance();
-                            curr_x += a.x as f32 / 64.0;
-                            curr_y += a.y as f32 / 64.0;
+                            gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, tmp.len() as i32);
+                            curr_x += glyph.advance.0 / 64.0;
+                            curr_y -= glyph.advance.1 / 64.0;
                         }
                     }
                     gl::BindVertexArray(0);
@@ -331,7 +331,6 @@ impl<'b> Renderer {
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as GLint);
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as GLint);
                 gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as GLint);
-                println!("foo");
                 gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGBA as GLint, image.width() as GLsizei, image.height() as GLsizei,
                     0, gl::RGBA, gl::UNSIGNED_BYTE, image.into_raw().as_ptr() as *const GLvoid);
 

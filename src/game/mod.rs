@@ -77,9 +77,9 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(rect)
             .with(color)
             .with(Text {
-                text: "Level".to_string(),
+                text: "LevelpqQ".to_string(),
                 scale: 1.0,
-                location: (rect.x, rect.y),
+                location: (rect.x + 15.0, rect.y + 15.0),
             })
             .with(OnClick {
                 f: Box::new(move || {

@@ -7,27 +7,37 @@ type Vbo = GLuint;
 type Vao = GLuint;
 
 pub struct Font {
-    pub font_textures: [Texture; 128],
-    pub glyphs: Vec<freetype::glyph_slot::GlyphSlot>,
-    pub bitmaps: Vec<freetype::bitmap::Bitmap>,
+    pub glyphs: [Glyph; 128],
 }
 
+#[derive(Copy, Clone, Default, Debug)]
+pub struct Glyph {
+    pub texture: Texture,
+    pub left: f32,
+    pub top: f32,
+    pub w: f32,
+    pub h: f32,
+    pub advance: (f32, f32),
+}
 
 impl Font {
     pub fn new(p: &Path) -> Self {
-        let mut font_textures = [0; 128];
         let lib = library::Library::init().unwrap();
         let face = lib.new_face(p, 0).unwrap();
-        let mut glyphs = Vec::new();
-        let mut bitmaps = Vec::new();
+        let mut glyphs = [Glyph::default(); 128];
 
         face.set_char_size(40 * 64, 0, 50, 0).unwrap();
         for i in 0..128 {
             face.load_char(i, freetype::face::LoadFlag::RENDER).unwrap();
-            let glyph = face.glyph().clone();
+            let glyph = face.glyph();
             let bitmap = glyph.bitmap();
-            println!("{}: width: {}, rows: {}, buffer_size: {}, mode: {:?}", i, bitmap.width(), bitmap.rows(), bitmap.buffer().len(), bitmap.pixel_mode().unwrap());
-            println!("{}: left: {}, top: {}", i, glyph.bitmap_left(), glyph.bitmap_top());
+            glyphs[i].left = glyph.bitmap_left() as f32;
+            glyphs[i].top = glyph.bitmap_top() as f32;
+            glyphs[i].w = bitmap.width() as f32;
+            glyphs[i].h = bitmap.rows() as f32;
+            let a = glyph.advance();
+            glyphs[i].advance = (a.x as f32, a.y as f32);
+            println!("index: {}, {:?}", i, glyphs[i]);
 
             let mut texture = 0;
             unsafe {
@@ -41,14 +51,10 @@ impl Font {
                 gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RED as GLint, bitmap.width() as GLsizei, bitmap.rows() as GLsizei,
                     0, gl::RED, gl::UNSIGNED_BYTE, bitmap.buffer().as_ptr() as *const GLvoid);
             }
-            glyphs.push(glyph);
-            bitmaps.push(bitmap);
-            font_textures[i] = texture;
+            glyphs[i].texture = texture;
         }
         Font {
-            font_textures,
             glyphs,
-            bitmaps,
         }
     }
 }
