@@ -45,7 +45,7 @@ pub enum StateTransition {
 }
 
 pub struct Game<'a, 'b> {
-    debug: debug::Debug<'a, 'b>,
+    debug: debug::Debug,
     renderer: renderer::Renderer,
     state_stack: Vec<Box<GameState>>,
     dispatcher: Dispatcher<'a, 'b>,
