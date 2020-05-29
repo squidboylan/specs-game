@@ -77,9 +77,9 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(rect)
             .with(color)
             .with(Text {
-                text: "LevelpqQ".to_string(),
+                text: "Levelp".to_string(),
                 scale: 1.0,
-                location: (rect.x + 15.0, rect.y + 15.0),
+                location: (rect.x + 5.0, rect.y + 35.0),
             })
             .with(OnClick {
                 f: Box::new(move || {
@@ -155,7 +155,11 @@ impl<'a, 'b> Game<'a, 'b> {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self) -> Option<glutin::event_loop::ControlFlow> {
+        if self.state_stack.is_empty() {
+            return Some(glutin::event_loop::ControlFlow::Exit);
+        }
+
         let transition = {
             let curr_state = self.state_stack.last_mut().unwrap();
             let t = {
@@ -183,11 +187,16 @@ impl<'a, 'b> Game<'a, 'b> {
             }
             None => (),
         };
+        None
     }
 
-    pub fn draw(&mut self, ctx: &mut WindowedContext<glutin::PossiblyCurrent>) {
+    pub fn draw(&mut self, ctx: &mut WindowedContext<glutin::PossiblyCurrent>) -> Option<glutin::event_loop::ControlFlow> {
+        if self.state_stack.is_empty() {
+            return Some(glutin::event_loop::ControlFlow::Exit);
+        }
         let curr_state = self.state_stack.last_mut().unwrap();
         self.renderer.run(ctx, &mut curr_state.world);
+        None
     }
 
     pub fn key_event(

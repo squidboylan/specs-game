@@ -73,7 +73,10 @@ fn main() {
                     _ => (),
                 },
                 Event::MainEventsCleared => {
-                    game.update();
+                    let flow = game.update();
+                    if flow.is_some() {
+                        *control_flow = flow.unwrap();
+                    }
                     windowed_context.window().request_redraw();
                 },
                 Event::RedrawRequested(_) => {
@@ -81,7 +84,10 @@ fn main() {
                         gl::ClearColor(0.3, 0.3, 0.3, 1.0);
                         gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
                     }
-                    game.draw(&mut windowed_context);
+                    let flow = game.draw(&mut windowed_context);
+                    if flow.is_some() {
+                        *control_flow = flow.unwrap();
+                    }
                     windowed_context.swap_buffers().unwrap();
                     let elapsed = start.elapsed();
                     //println!("millis: {} ms", elapsed.as_millis());

@@ -261,7 +261,6 @@ impl<'b> Renderer {
                         for character in t.text.as_bytes() {
                             let glyph = self.font.glyphs[*character as usize];
                             gl::BindTexture(gl::TEXTURE_2D, glyph.texture);
-                            //println!("left: {}, top: {}, width: {}, rows {}", left, top, w, h);
                             let x = curr_x + glyph.left + glyph.w/2.0;
                             let y = curr_y - glyph.top + glyph.h/2.0;
                             let loc = (x, y, 1.0, 1.0);
@@ -270,7 +269,6 @@ impl<'b> Renderer {
                                 dimensions: (glyph.w, glyph.h),
                                 pad: (0.0, 0.0)
                             }];
-                            //println!("Drawing: {:?}", tmp);
                             gl::BufferData(
                                 gl::ARRAY_BUFFER,
                                 (tmp.len() * mem::size_of::<Character>()) as GLsizeiptr,
