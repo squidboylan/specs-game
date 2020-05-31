@@ -2,6 +2,7 @@ use crate::components::*;
 use crate::debug;
 use crate::renderer;
 use crate::systems::*;
+use crate::game::input::*;
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::event::VirtualKeyCode;
@@ -11,6 +12,19 @@ use std::mem;
 
 pub mod input;
 pub mod map;
+
+#[derive(SystemData)]
+struct InputSystemData<'a> {
+    entities: Entities<'a>,
+    rect: WriteStorage<'a, Rect>,
+    hover: WriteStorage<'a, Hover>,
+    click: WriteStorage<'a, OnClick>,
+    cursor: ReadStorage<'a, Cursor>,
+    input: Write<'a, Input>,
+    transition: Write<'a, Option<StateTransition>>,
+    vel: WriteStorage<'a, Vel>,
+    player: ReadStorage<'a, Player>,
+}
 
 struct GameState {
     pub world: World,
@@ -82,7 +96,7 @@ impl<'a, 'b> Game<'a, 'b> {
                 location: (rect.x + 5.0, rect.y + 35.0),
             })
             .with(OnClick {
-                f: Box::new(move || {
+                f: Box::new(move |_, _| {
                     let mut world = GameState::initialized_world();
                     world.insert(map.clone());
 
@@ -122,13 +136,19 @@ impl<'a, 'b> Game<'a, 'b> {
                 }),
             })
             .with(Hover::new(
-                Box::new(|c| {
+                Box::new(|w, e| {
+                    let mut cs = w.write_component::<RectColor>();
+                    let c = cs.get_mut(e).unwrap();
+
                     c.r = 1.0;
                     c.g = 1.0;
                     c.b = 1.0;
                     None
                 }),
-                Box::new(|c| {
+                Box::new(|w, e| {
+                    let mut cs = w.write_component::<RectColor>();
+                    let c = cs.get_mut(e).unwrap();
+
                     c.r = 1.0;
                     c.g = 0.0;
                     c.b = 0.0;
@@ -137,9 +157,7 @@ impl<'a, 'b> Game<'a, 'b> {
             ))
             .build();
         let dispatcher = DispatcherBuilder::new()
-            .with(InputHandler, "input", &[])
-            //.with(Creator::new(0.0), "Creator", &[])
-            .with(Physics, "physics", &["input"])
+            .with(Physics, "physics", &[])
             .build();
         let debug = debug::Debug::new(&mut menu_world);
         let menu = GameState::new(menu_world);
@@ -155,11 +173,85 @@ impl<'a, 'b> Game<'a, 'b> {
         }
     }
 
+    pub fn update_input(&mut self) {
+        let curr_state = self.state_stack.last_mut().unwrap();
+        let mut data: InputSystemData = curr_state.world.system_data();
+        for (e, r, hover) in (&data.entities, &data.rect, &mut data.hover).join() {
+            if data.input.mouse.x >= r.x
+                && data.input.mouse.x <= r.x + r.w
+                && data.input.mouse.y >= r.y
+                && data.input.mouse.y <= r.y + r.h
+            {
+                let tmp_transition = hover.on_hover(&curr_state.world, e);
+                match &tmp_transition {
+                    Some(_x) => { *data.transition = tmp_transition; return },
+                    None => (),
+                }
+            } else {
+                let tmp_transition = hover.off_hover(&curr_state.world, e);
+                match &tmp_transition {
+                    Some(_x) => { *data.transition = tmp_transition; return },
+                    None => (),
+                }
+            }
+        }
+        if data.input.mouse.left_tap {
+            data.input.mouse.left_tap = false;
+            for (e, r, on_click) in (&data.entities, &data.rect, &mut data.click).join() {
+                if data.input.mouse.x >= r.x
+                    && data.input.mouse.x <= r.x + r.w
+                    && data.input.mouse.y >= r.y
+                    && data.input.mouse.y <= r.y + r.h
+                {
+                    *data.transition = (on_click.f)(&curr_state.world, e);
+                    match &*data.transition {
+                        Some(_x) => return,
+                        None => (),
+                    }
+                }
+            }
+        }
+        for (r, _) in (&mut data.rect, &data.cursor).join() {
+            r.x = data.input.mouse.x - r.w / 2.0;
+            r.y = data.input.mouse.y - r.h / 2.0;
+        }
+
+        let velocity = 5.0;
+
+        for (v, _) in (&mut data.vel, &data.player).join() {
+            if data.input.keyboard.w {
+                v.y = -1.0 * velocity;
+            }
+            if data.input.keyboard.a {
+                v.x = -1.0 * velocity;
+            }
+            if data.input.keyboard.s {
+                v.y = velocity;
+            }
+            if data.input.keyboard.d {
+                v.x = velocity;
+            }
+
+            if !data.input.keyboard.w && !data.input.keyboard.s {
+                v.y = 0.0;
+            }
+            if !data.input.keyboard.a && !data.input.keyboard.d {
+                v.x = 0.0;
+            }
+        }
+
+        for (r, _) in (&mut data.rect, &data.cursor).join() {
+            r.x = data.input.mouse.x - r.w / 2.0;
+            r.y = data.input.mouse.y - r.h / 2.0;
+        }
+    }
+
     pub fn update(&mut self) -> Option<glutin::event_loop::ControlFlow> {
         if self.state_stack.is_empty() {
             return Some(glutin::event_loop::ControlFlow::Exit);
         }
 
+        self.update_input();
         let transition = {
             let curr_state = self.state_stack.last_mut().unwrap();
             let t = {

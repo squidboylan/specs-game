@@ -102,15 +102,15 @@ impl RectColor {
 }
 
 pub struct Hover {
-    pub on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
-    pub off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+    pub on_hover_fn: Box<dyn FnMut(&World, specs::Entity) -> Option<StateTransition> + Send + Sync>,
+    pub off_hover_fn: Box<dyn FnMut(&World, specs::Entity) -> Option<StateTransition> + Send + Sync>,
     hovering: bool,
 }
 
 impl Hover {
     pub fn new(
-        on_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
-        off_hover_fn: Box<dyn FnMut(&mut RectColor) -> Option<StateTransition> + Send + Sync>,
+        on_hover_fn: Box<dyn FnMut(&World, specs::Entity) -> Option<StateTransition> + Send + Sync>,
+        off_hover_fn: Box<dyn FnMut(&World, specs::Entity) -> Option<StateTransition> + Send + Sync>,
     ) -> Self {
         Hover {
             on_hover_fn,
@@ -119,19 +119,19 @@ impl Hover {
         }
     }
 
-    pub fn on_hover(&mut self, c: &mut RectColor) -> Option<StateTransition> {
+    pub fn on_hover(&mut self, w: &World, e: specs::Entity) -> Option<StateTransition> {
         if !self.hovering {
             self.hovering = true;
-            (self.on_hover_fn)(c)
+            (self.on_hover_fn)(w, e)
         } else {
             None
         }
     }
 
-    pub fn off_hover(&mut self, c: &mut RectColor) -> Option<StateTransition> {
+    pub fn off_hover(&mut self, w: &World, e: specs::Entity) -> Option<StateTransition> {
         if self.hovering {
             self.hovering = false;
-            (self.off_hover_fn)(c)
+            (self.off_hover_fn)(w, e)
         } else {
             None
         }
@@ -143,7 +143,7 @@ impl Component for Hover {
 }
 
 pub struct OnClick {
-    pub f: Box<dyn FnMut() -> Option<StateTransition> + Send + Sync>,
+    pub f: Box<dyn FnMut(&World, specs::Entity) -> Option<StateTransition> + Send + Sync>,
 }
 
 impl Component for OnClick {
