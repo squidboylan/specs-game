@@ -165,7 +165,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .build();
         let dispatcher = DispatcherBuilder::new()
             .with(Physics, "physics", &[])
-            .with(ParticleSystem, "particles", &["physics"])
+            .with(ParticleSystem::new(), "particles", &["physics"])
             .build();
         let debug = debug::Debug::new(&mut menu_world);
         let menu = GameState::new(menu_world);

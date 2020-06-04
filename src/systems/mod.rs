@@ -2,6 +2,7 @@ use crate::game::input::*;
 use crate::game::*;
 use specs::prelude::*;
 use std::f32::consts::PI;
+use rand::{Rng, SeedableRng};
 
 use crate::components::*;
 
@@ -45,7 +46,19 @@ pub struct ParticleSystemData<'a> {
     input: Read<'a, Input>,
 }
 
-pub struct ParticleSystem;
+pub struct ParticleSystem{
+    rng: rand::rngs::SmallRng,
+}
+
+impl ParticleSystem {
+    pub fn new() -> Self {
+        let mut thread_rng = rand::thread_rng();
+        let rng = rand::rngs::SmallRng::from_rng(&mut thread_rng).unwrap();
+        ParticleSystem {
+            rng,
+        }
+    }
+}
 
 impl<'a> System<'a> for ParticleSystem {
     type SystemData = ParticleSystemData<'a>;
@@ -55,12 +68,13 @@ impl<'a> System<'a> for ParticleSystem {
             for (_, player_rect, mut rotation) in (&data.player, &data.rect, &mut data.rotation).join() {
                 let (x, y) = player_rect.get_center();
                 let vel = 5.0;
+                let vel_vary: (f32, f32) = (self.rng.gen_range(-0.1, 0.1) * PI, self.rng.gen_range(-0.1, 0.1) * PI);
                 let p = particles::Particle {
                     location: (x, y, 0.0, 0.0),
-                    color: (1.0, 1.0, 1.0, 1.0),
-                    dimensions: (5.0, 5.0),
+                    color: (self.rng.gen_range(0.0, 1.0), self.rng.gen_range(0.0, 1.0), self.rng.gen_range(0.0, 1.0), 1.0),
+                    dimensions: (4.0, 4.0),
                     accel: (0.0, 0.0),
-                    velocity: (vel * rotation.cos(), vel * rotation.sin()),
+                    velocity: ((vel_vary.0 + rotation.cos()) * vel, (vel_vary.1 + rotation.sin()) * vel),
                     life: 1200,
                     pad: 0,
                 };
