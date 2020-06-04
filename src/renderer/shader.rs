@@ -9,7 +9,7 @@ use std::time;
 use std::error::Error;
 
 pub struct Program {
-    pub program: GLuint,
+    program: GLuint,
 }
 
 impl Program {
@@ -109,6 +109,83 @@ impl Program {
             }
         }
         Program { program }
+    }
+    pub fn enable(&mut self) {
+        unsafe {
+            gl::UseProgram(self.program);
+        }
+    }
+}
+
+
+pub struct ComputeProgram {
+    program: GLuint,
+}
+
+impl ComputeProgram {
+    pub fn new(compute_source: &str) -> Self {
+        let compute_shader;
+        unsafe {
+            compute_shader = gl::CreateShader(gl::COMPUTE_SHADER);
+            // Attempt to compile the shader
+            let c_str = CString::new(compute_source.as_bytes()).unwrap();
+            gl::ShaderSource(compute_shader, 1, &c_str.as_ptr(), ptr::null());
+            gl::CompileShader(compute_shader);
+
+            // Get the compile status
+            let mut status = gl::FALSE as GLint;
+            gl::GetShaderiv(compute_shader, gl::COMPILE_STATUS, &mut status);
+
+            // Fail on error
+            if status != (gl::TRUE as GLint) {
+                let mut len = 0;
+                gl::GetShaderiv(compute_shader, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buf = Vec::with_capacity(len as usize);
+                buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+                gl::GetShaderInfoLog(
+                    compute_shader,
+                    len,
+                    ptr::null_mut(),
+                    buf.as_mut_ptr() as *mut GLchar,
+                    );
+                panic!(
+                    "{}",
+                    str::from_utf8(&buf)
+                    .ok()
+                    .expect("ShaderInfoLog not valid utf8")
+                    );
+            }
+        }
+        let program;
+        unsafe {
+            program = gl::CreateProgram();
+            gl::AttachShader(program, compute_shader);
+            gl::LinkProgram(program);
+            // Get the link status
+            let mut status = gl::FALSE as GLint;
+            gl::GetProgramiv(program, gl::LINK_STATUS, &mut status);
+
+            // Fail on error
+            if status != (gl::TRUE as GLint) {
+                let mut len: GLint = 0;
+                gl::GetProgramiv(program, gl::INFO_LOG_LENGTH, &mut len);
+                let mut buf = Vec::with_capacity(len as usize);
+                buf.set_len((len as usize) - 1); // subtract 1 to skip the trailing null character
+                gl::GetProgramInfoLog(
+                    program,
+                    len,
+                    ptr::null_mut(),
+                    buf.as_mut_ptr() as *mut GLchar,
+                    );
+                panic!(
+                    "{}",
+                    str::from_utf8(&buf)
+                    .ok()
+                    .expect("ProgramInfoLog not valid utf8")
+                    );
+            }
+        }
+        ComputeProgram { program }
     }
     pub fn enable(&mut self) {
         unsafe {

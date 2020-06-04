@@ -11,6 +11,7 @@ pub struct Mouse {
     pub x: f32,
     pub y: f32,
     pub left_tap: bool,
+    pub left_down: bool,
 }
 
 #[derive(Default)]
@@ -32,6 +33,7 @@ impl Input {
                 x: 0.0,
                 y: 0.0,
                 left_tap: false,
+                left_down: false,
             },
         }
     }

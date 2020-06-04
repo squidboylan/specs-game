@@ -1,5 +1,6 @@
 use crate::components::*;
 use crate::game::map::Map;
+use crate::game::particles::Particle;
 use glutin::WindowedContext;
 use specs::prelude::*;
 use std::collections::HashMap;
@@ -9,6 +10,7 @@ use gl::types::*;
 
 pub const SCREEN_WIDTH: f32 = 1920.0;
 pub const SCREEN_HEIGHT: f32 = 1080.0;
+const MAX_PARTICLES: usize = 10000;
 
 mod shader;
 mod font;
@@ -46,6 +48,8 @@ pub struct Renderer {
     rect_shader: shader::Program,
     texture_shader: shader::Program,
     text_shader: shader::Program,
+    particle_shader: shader::Program,
+    particle_compute_shader: shader::ComputeProgram,
     mesh_vbo: Vbo,
     rects_vao: Vao,
     rects_vbo: Vbo,
@@ -55,6 +59,9 @@ pub struct Renderer {
     texture_handles: HashMap<String, Texture>,
     text_rects_vao: Vao,
     text_rects_vbo: Vbo,
+    particles_vao: Vao,
+    particles_vbo: Vbo,
+    next_particle: usize,
     font: font::Font,
 }
 
@@ -71,6 +78,9 @@ impl<'b> Renderer {
         let mut rect_shader = shader::Program::new(&include_str!("shaders/rect_color.vert"), &include_str!("shaders/rect_color.frag"));
         let mut texture_shader = shader::Program::new(&include_str!("shaders/texture.vert"), &include_str!("shaders/texture.frag"));
         let mut text_shader = shader::Program::new(&include_str!("shaders/text.vert"), &include_str!("shaders/text.frag"));
+        let mut particle_shader = shader::Program::new(&include_str!("shaders/particle.vert"), &include_str!("shaders/particle.frag"));
+        let mut particle_compute_shader = shader::ComputeProgram::new(&include_str!("shaders/particle.compute"));
+
 
         let texture_handles = HashMap::new();
 
@@ -98,18 +108,17 @@ impl<'b> Renderer {
 
         let mut text_rects_vao = 0;
         let mut text_rects_vbo = 0;
+
+        let mut particles_vao = 0;
+        let mut particles_vbo = 0;
         unsafe {
-            // We probably dont need these things, at least not for now, but i'll keep the stuff
-            // here and commented out just in case.
-            /*
             // Enable backface culling
             gl::Enable(gl::CULL_FACE);
             gl::CullFace(gl::BACK);
-            gl::FrontFace(gl::CW);
+            gl::FrontFace(gl::CCW);
             // Enable Depth Testing
-            gl::Enable(gl::DEPTH_TEST);
-            gl::DepthFunc(gl::LESS);
-            */
+            //gl::Enable(gl::DEPTH_TEST);
+            //gl::DepthFunc(gl::LESS);
 
             // Alpha stuff
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
@@ -156,6 +165,7 @@ impl<'b> Renderer {
             gl::BindVertexArray(0);
 
             // Setup our text data in the GPU
+            let particles_data: Vec<Particle> = vec![Particle::default(); MAX_PARTICLES];
             gl::GenVertexArrays(1, &mut text_rects_vao);
             gl::GenBuffers(1, &mut text_rects_vbo);
 
@@ -176,6 +186,44 @@ impl<'b> Renderer {
             gl::VertexAttribDivisor(2, 1);
             gl::BindVertexArray(0);
 
+            // Setup our particle data in the GPU
+            gl::GenVertexArrays(1, &mut particles_vao);
+            gl::GenBuffers(1, &mut particles_vbo);
+
+            gl::BindVertexArray(particles_vao);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, mesh_vbo);
+            gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0 as i32, 0 as *const GLvoid);
+            gl::EnableVertexAttribArray(0);
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, particles_vbo);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (particles_data.len() * mem::size_of::<Particle>()) as GLsizeiptr,
+                mem::transmute(&particles_data[0]),
+                gl::STREAM_DRAW,
+                );
+
+            gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, mem::size_of::<Particle>() as i32, 0 as *const GLvoid);
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(2, 4, gl::FLOAT, gl::FALSE, mem::size_of::<Particle>() as i32, (4 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, mem::size_of::<Particle>() as i32, (8 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(3);
+            gl::VertexAttribPointer(4, 2, gl::FLOAT, gl::FALSE, mem::size_of::<Particle>() as i32, (10 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(4);
+            gl::VertexAttribPointer(5, 2, gl::FLOAT, gl::FALSE, mem::size_of::<Particle>() as i32, (12 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(5);
+            gl::VertexAttribPointer(6, 1, gl::UNSIGNED_INT, gl::FALSE, mem::size_of::<Particle>() as i32, (14 * mem::size_of::<f32>()) as *const GLvoid);
+            gl::EnableVertexAttribArray(6);
+            gl::VertexAttribDivisor(0, 0);
+            gl::VertexAttribDivisor(1, 1);
+            gl::VertexAttribDivisor(2, 1);
+            gl::VertexAttribDivisor(3, 1);
+            gl::VertexAttribDivisor(4, 1);
+            gl::VertexAttribDivisor(5, 1);
+            gl::VertexAttribDivisor(6, 1);
+            gl::BindVertexArray(0);
         }
 
         let font = font::Font::new(std::path::Path::new("resources/OpenSans-Regular.ttf"));
@@ -184,6 +232,8 @@ impl<'b> Renderer {
             rect_shader,
             texture_shader,
             text_shader,
+            particle_shader,
+            particle_compute_shader,
             mesh_vbo,
             rects_vao,
             rects_vbo,
@@ -193,6 +243,9 @@ impl<'b> Renderer {
             texture_rects_data,
             text_rects_vao,
             text_rects_vbo,
+            particles_vao,
+            particles_vbo,
+            next_particle: 0,
             font,
         }
     }
@@ -240,6 +293,12 @@ impl<'b> Renderer {
             },
         );
         self.draw_text(ctx, world);
+
+        if world.try_fetch_mut::<crate::game::particles::ParticleEngine>().is_some() {
+            self.create_particles(world);
+            self.update_particles();
+            self.render_particles();
+        }
     }
 
     pub fn draw_text(&mut self, ctx: &mut WindowedContext<glutin::PossiblyCurrent>, world: &'b mut World) {
@@ -395,6 +454,49 @@ impl<'b> Renderer {
             gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, self.texture_rects_data.len() as i32);
             gl::BindVertexArray(0);
             gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+    }
+    // Generates a new particle with a random velocity in a range and a red color
+    pub fn create_particles(&mut self, world: &'b mut World) {
+        let mut particle_engine = world.get_mut::<crate::game::particles::ParticleEngine>().unwrap();
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.particles_vbo);
+            for particle in &particle_engine.particles {
+                gl::BufferSubData(
+                    gl::ARRAY_BUFFER,
+                    (self.next_particle * mem::size_of::<Particle>()) as isize,
+                    mem::size_of::<Particle>() as GLsizeiptr,
+                    mem::transmute(particle),
+                    );
+                self.next_particle += 1;
+                if self.next_particle == MAX_PARTICLES {
+                    self.next_particle = 0;
+                }
+            }
+        }
+        particle_engine.particles.clear();
+    }
+
+    // Updates the particles using the compute shader
+    pub fn update_particles(&mut self) {
+        self.particle_compute_shader.enable();
+        unsafe {
+            gl::MemoryBarrier(gl::BUFFER_UPDATE_BARRIER_BIT);
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, 0, self.particles_vbo);
+            gl::DispatchCompute(MAX_PARTICLES as u32/256 + 1, 1, 1);
+            gl::BindBufferBase(gl::SHADER_STORAGE_BUFFER, 0, 0);
+        }
+    }
+
+    // Renders the particles using instancing with one mesh for better performance
+    pub fn render_particles(&mut self) {
+        self.particle_shader.enable();
+        unsafe {
+            gl::MemoryBarrier(gl::SHADER_STORAGE_BARRIER_BIT | gl::VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+
+            gl::BindVertexArray(self.particles_vao);
+            gl::DrawArraysInstanced(gl::TRIANGLES, 0, 6, MAX_PARTICLES as i32);
+            gl::BindVertexArray(0);
         }
     }
 }

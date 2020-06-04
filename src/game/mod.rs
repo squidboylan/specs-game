@@ -11,6 +11,7 @@ use specs::prelude::*;
 use std::mem;
 
 pub mod input;
+pub mod particles;
 pub mod map;
 
 #[derive(SystemData)]
@@ -24,6 +25,7 @@ struct InputSystemData<'a> {
     transition: Write<'a, Option<StateTransition>>,
     vel: WriteStorage<'a, Vel>,
     player: ReadStorage<'a, Player>,
+    particle_engine: Write<'a, particles::ParticleEngine>,
 }
 
 struct GameState {
@@ -68,6 +70,7 @@ pub struct Game<'a, 'b> {
 impl<'a, 'b> Game<'a, 'b> {
     pub fn new() -> Self {
         let mut menu_world = GameState::initialized_world();
+        let particle_engine = particles::ParticleEngine::new();
         let cursor_rect = Rect::new(0.0, 0.0, 5.0, 5.0);
         let rect = Rect::new(
             renderer::SCREEN_WIDTH / 2.0 - 200.0 / 2.0,
@@ -79,6 +82,8 @@ impl<'a, 'b> Game<'a, 'b> {
         let cursor_color = RectColor::new(1.0, 1.0, 1.0, 1.0);
         let level_data = tiled::parse_file(std::path::Path::new("./resources/map1.tmx")).unwrap();
         let map = map::Map::from_tiled(&level_data).unwrap();
+
+        menu_world.insert(particle_engine);
 
         menu_world
             .create_entity()
@@ -98,7 +103,9 @@ impl<'a, 'b> Game<'a, 'b> {
             .with(OnClick {
                 f: Box::new(move |_, _| {
                     let mut world = GameState::initialized_world();
+                    let particle_engine = particles::ParticleEngine::new();
                     world.insert(map.clone());
+                    world.insert(particle_engine);
 
                     let player_rect = Rect::new(0.0, 0.0, 25.0, 25.0);
                     let rect = Rect::new(0.0, 1.0, 5.0, 5.0);
@@ -158,6 +165,7 @@ impl<'a, 'b> Game<'a, 'b> {
             .build();
         let dispatcher = DispatcherBuilder::new()
             .with(Physics, "physics", &[])
+            .with(ParticleSystem, "particles", &["physics"])
             .build();
         let debug = debug::Debug::new(&mut menu_world);
         let menu = GameState::new(menu_world);
@@ -339,7 +347,14 @@ impl<'a, 'b> Game<'a, 'b> {
         let curr_state = self.state_stack.last_mut().unwrap();
         if state == glutin::event::ElementState::Pressed {
             match button {
-                glutin::event::MouseButton::Left => curr_state.world.fetch_mut::<input::Input>().mouse.left_tap = true,
+                glutin::event::MouseButton::Left => { curr_state.world.fetch_mut::<input::Input>().mouse.left_tap = true; curr_state.world.fetch_mut::<input::Input>().mouse.left_down = true },
+                _ => println!("Mouse Button Pressed: {:?}", button),
+            };
+        }
+
+        if state == glutin::event::ElementState::Released {
+            match button {
+                glutin::event::MouseButton::Left => { curr_state.world.fetch_mut::<input::Input>().mouse.left_down = false },
                 _ => println!("Mouse Button Pressed: {:?}", button),
             };
         }

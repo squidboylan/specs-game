@@ -34,3 +34,38 @@ impl<'a> System<'a> for Physics {
         }
     }
 }
+
+#[derive(SystemData)]
+pub struct ParticleSystemData<'a> {
+    rect: WriteStorage<'a, Rect>,
+    cursor: ReadStorage<'a, Cursor>,
+    player: ReadStorage<'a, Player>,
+    rotation: WriteStorage<'a, Rotation>,
+    particle_engine: Write<'a, particles::ParticleEngine>,
+    input: Read<'a, Input>,
+}
+
+pub struct ParticleSystem;
+
+impl<'a> System<'a> for ParticleSystem {
+    type SystemData = ParticleSystemData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        if data.input.mouse.left_down {
+            for (_, player_rect, mut rotation) in (&data.player, &data.rect, &mut data.rotation).join() {
+                let (x, y) = player_rect.get_center();
+                let vel = 5.0;
+                let p = particles::Particle {
+                    location: (x, y, 0.0, 0.0),
+                    color: (1.0, 1.0, 1.0, 1.0),
+                    dimensions: (5.0, 5.0),
+                    accel: (0.0, 0.0),
+                    velocity: (vel * rotation.cos(), vel * rotation.sin()),
+                    life: 1200,
+                    pad: 0,
+                };
+                data.particle_engine.create_particle(p);
+            }
+        }
+    }
+}

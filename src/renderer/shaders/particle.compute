@@ -1,0 +1,42 @@
+#version 430
+
+layout (local_size_x = 256) in;
+
+struct Particle
+{
+  vec4 position;
+  vec4 color;
+  vec2 dimensions;
+  vec2 accel;
+  vec2 vel;
+  int life;
+};
+
+layout (std430, binding = 0) buffer ParticleBuffer {
+    Particle particles[];
+};
+
+void main()
+{
+    uint index = gl_GlobalInvocationID.x;
+    Particle p = particles[index];
+
+    if (p.life == 0) {
+        return;
+    }
+
+    p.life = p.life - 1;
+    if (p.life == 0) {
+        p.dimensions.x = p.dimensions.x * -1;
+        particles[index] = p;
+        return;
+    }
+
+    p.position.x = p.position.x + p.vel.x;
+    p.position.y = p.position.y + p.vel.y;
+    // Keep particles spawned earlier in the background
+    //p.position.z = p.position.z + 0.01;
+    p.vel.x = p.vel.x + p.accel.x;
+    p.vel.y = p.vel.y + p.accel.y;
+    particles[index] = p;
+}
